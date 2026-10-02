@@ -3,7 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "@clerk/ui/themes/shadcn.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -121,6 +121,7 @@
   --chart-3: #10b981;
   --chart-4: #8b5cf6;
   --chart-5: #f59e0b;
+  --radius: 0.75rem;
   --sidebar: #111827;
   --sidebar-foreground: #f1f5f9;
   --sidebar-primary: #3b82f6;
@@ -178,6 +179,9 @@
 @keyframes timer-ring {
   from {
     stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 276.46;
   }
 }
 
