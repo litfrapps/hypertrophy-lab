@@ -624,22 +624,20 @@ function WorkoutSessionManager() {
                 <button
                   type="button"
                   onClick={() => setUnit("kg")}
-                  className={`px-2 py-0.5 rounded font-medium transition-all ${
-                    unit === "kg"
-                      ? "bg-blue-600 text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-2 py-0.5 rounded font-medium transition-all ${unit === "kg"
+                    ? "bg-blue-600 text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   kg
                 </button>
                 <button
                   type="button"
                   onClick={() => setUnit("lbs")}
-                  className={`px-2 py-0.5 rounded font-medium transition-all ${
-                    unit === "lbs"
-                      ? "bg-blue-600 text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-2 py-0.5 rounded font-medium transition-all ${unit === "lbs"
+                    ? "bg-blue-600 text-white"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   lbs
                 </button>
@@ -672,7 +670,7 @@ function WorkoutSessionManager() {
                 onClick={() => setPickerOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 px-4"
               >
-                <Plus className="w-3.5 h-3.5 mr-1" /> + Add Exercise
+                <Plus className="w-3.5 h-3.5 mr-1" /> Add Exercise
               </Button>
             </CardContent>
           </Card>
@@ -778,19 +776,17 @@ function WorkoutSessionManager() {
                       {item.sets.map((set, setIdx) => (
                         <div
                           key={setIdx}
-                          className={`grid grid-cols-[26px_1fr_1fr_64px_24px] gap-1.5 items-center p-1 rounded-lg transition-all ${
-                            set.completed
-                              ? "bg-green-500/10 border border-green-500/30"
-                              : "bg-secondary/20 hover:bg-secondary/40 border border-transparent"
-                          }`}
+                          className={`grid grid-cols-[26px_1fr_1fr_64px_24px] gap-1.5 items-center p-1 rounded-lg transition-all ${set.completed
+                            ? "bg-green-500/10 border border-green-500/30"
+                            : "bg-secondary/20 hover:bg-secondary/40 border border-transparent"
+                            }`}
                         >
                           {/* Set number */}
                           <div
-                            className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-mono font-bold ${
-                              set.completed
-                                ? "bg-green-500/20 text-green-400"
-                                : "text-muted-foreground font-semibold"
-                            }`}
+                            className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-mono font-bold ${set.completed
+                              ? "bg-green-500/20 text-green-400"
+                              : "text-muted-foreground font-semibold"
+                              }`}
                           >
                             {set.setNumber}
                           </div>
@@ -834,11 +830,10 @@ function WorkoutSessionManager() {
                           <button
                             type="button"
                             onClick={() => toggleSetComplete(item.id, setIdx)}
-                            className={`h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${
-                              set.completed
-                                ? "bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                                : "bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60"
-                            }`}
+                            className={`h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${set.completed
+                              ? "bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                              : "bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60"
+                              }`}
                           >
                             <Check className="w-3.5 h-3.5" />
                             <span>{set.completed ? "Done" : "Log"}</span>
@@ -889,7 +884,7 @@ function WorkoutSessionManager() {
                 variant="outline"
                 className="flex-1 h-11 border-blue-500/30 text-blue-400 hover:bg-blue-600/10 font-semibold text-xs sm:text-sm rounded-xl"
               >
-                <Plus className="w-4 h-4 mr-1.5" /> + Add Exercise
+                <Plus className="w-4 h-4 mr-1.5" /> Add Exercise
               </Button>
 
               <Button
@@ -1033,11 +1028,10 @@ function WorkoutSessionManager() {
                 <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-none">
                   <Badge
                     variant="secondary"
-                    className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                      !pickerMuscle
-                        ? "bg-blue-500/20 text-blue-400"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`cursor-pointer text-[10px] py-0.5 px-2 ${!pickerMuscle
+                      ? "bg-blue-500/20 text-blue-400"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
                     onClick={() => setPickerMuscle("")}
                   >
                     All
@@ -1049,11 +1043,10 @@ function WorkoutSessionManager() {
                       <Badge
                         key={m}
                         variant="secondary"
-                        className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                          isSelected
-                            ? `${colors.bg} ${colors.text}`
-                            : "bg-secondary text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`cursor-pointer text-[10px] py-0.5 px-2 ${isSelected
+                          ? `${colors.bg} ${colors.text}`
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
                         onClick={() =>
                           setPickerMuscle(isSelected ? "" : m)
                         }
