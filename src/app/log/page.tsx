@@ -114,7 +114,7 @@ function loadRoutines(): SavedRoutine[] {
 function saveRoutinesToStorage(routines: SavedRoutine[]) {
   try {
     localStorage.setItem(ROUTINES_KEY, JSON.stringify(routines));
-  } catch {}
+  } catch { }
 }
 
 function WorkoutSessionManager() {
@@ -144,7 +144,8 @@ function WorkoutSessionManager() {
   } = useSession();
 
   // ─── Custom Routines State ────────────────────────────────────────────────
-  const [savedRoutines, setSavedRoutines] = useState<SavedRoutine[]>(() => loadRoutines());
+  // Initialize empty to match SSR, then hydrate from localStorage on client mount
+  const [savedRoutines, setSavedRoutines] = useState<SavedRoutine[]>([]);
   const [routineBuilderOpen, setRoutineBuilderOpen] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState<SavedRoutine | null>(null);
   const [routineName, setRoutineName] = useState("");
@@ -153,6 +154,11 @@ function WorkoutSessionManager() {
   const [routinePickerSearch, setRoutinePickerSearch] = useState("");
   const [routinePickerMuscle, setRoutinePickerMuscle] = useState("");
   const [deleteRoutineId, setDeleteRoutineId] = useState<string | null>(null);
+
+  // Hydrate savedRoutines from localStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
+    setSavedRoutines(loadRoutines());
+  }, []);
 
   const persistRoutines = useCallback((routines: SavedRoutine[]) => {
     setSavedRoutines(routines);
@@ -264,7 +270,7 @@ function WorkoutSessionManager() {
         startNewSession([ex]);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedExerciseId]);
 
   // Filter exercises in picker
@@ -1565,9 +1571,8 @@ function WorkoutSessionManager() {
               <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-none">
                 <Badge
                   variant="secondary"
-                  className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                    !routinePickerMuscle ? "bg-purple-500/20 text-purple-400" : "bg-secondary text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`cursor-pointer text-[10px] py-0.5 px-2 ${!routinePickerMuscle ? "bg-purple-500/20 text-purple-400" : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
                   onClick={() => setRoutinePickerMuscle("")}
                 >
                   All
@@ -1579,9 +1584,8 @@ function WorkoutSessionManager() {
                     <Badge
                       key={m}
                       variant="secondary"
-                      className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                        isSelected ? `${colors.bg} ${colors.text}` : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`cursor-pointer text-[10px] py-0.5 px-2 ${isSelected ? `${colors.bg} ${colors.text}` : "bg-secondary text-muted-foreground hover:text-foreground"
+                        }`}
                       onClick={() => setRoutinePickerMuscle(isSelected ? "" : m)}
                     >
                       {m}
@@ -1605,14 +1609,12 @@ function WorkoutSessionManager() {
                         setRoutineExerciseIds((prev) => [...prev, ex.id]);
                       }
                     }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${
-                      isAdded ? "bg-purple-500/15 border border-purple-500/30" : "hover:bg-secondary/70 border border-transparent"
-                    }`}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${isAdded ? "bg-purple-500/15 border border-purple-500/30" : "hover:bg-secondary/70 border border-transparent"
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                        isAdded ? "bg-purple-500/20" : "bg-secondary"
-                      }`}>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isAdded ? "bg-purple-500/20" : "bg-secondary"
+                        }`}>
                         {isAdded ? (
                           <Check className="w-3.5 h-3.5 text-purple-400" />
                         ) : (
@@ -1620,11 +1622,11 @@ function WorkoutSessionManager() {
                         )}
                       </div>
                       <div>
-                        <div className={`font-semibold text-xs ${ isAdded ? "text-purple-300" : "group-hover:text-blue-400" } transition-colors`}>{ex.name}</div>
+                        <div className={`font-semibold text-xs ${isAdded ? "text-purple-300" : "group-hover:text-blue-400"} transition-colors`}>{ex.name}</div>
                         <div className={`text-[10px] ${pColors.text}`}>{ex.primaryMuscle}</div>
                       </div>
                     </div>
-                    <span className={`text-[10px] font-bold ${ isAdded ? "text-purple-400" : "text-blue-400 opacity-0 group-hover:opacity-100" } transition-opacity`}>
+                    <span className={`text-[10px] font-bold ${isAdded ? "text-purple-400" : "text-blue-400 opacity-0 group-hover:opacity-100"} transition-opacity`}>
                       {isAdded ? "✓ Added" : "+ Add"}
                     </span>
                   </button>
