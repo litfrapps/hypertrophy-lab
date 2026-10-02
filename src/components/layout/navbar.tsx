@@ -14,8 +14,11 @@ import {
   Menu,
   X,
   Timer,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -80,10 +83,40 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 py-4 border-t border-border">
-          <p className="text-xs text-muted-foreground text-center">
-            Science-backed training
+        {/* User Auth Section */}
+        <div className="p-4 border-t border-border space-y-3">
+          <Show when="signed-out">
+            <div className="space-y-2">
+              <SignInButton mode="modal">
+                <button className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-500/20 transition-all cursor-pointer">
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-border bg-secondary/50 hover:bg-secondary text-foreground transition-all cursor-pointer">
+                  <UserPlus className="w-4 h-4" />
+                  Create Account
+                </button>
+              </SignUpButton>
+            </div>
+          </Show>
+          <Show when="signed-in">
+            <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/40 border border-border/60">
+              <div className="flex items-center gap-3 min-w-0">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonBox: "flex-row-reverse gap-2",
+                    },
+                  }}
+                  showName
+                />
+              </div>
+            </div>
+          </Show>
+          <p className="text-[11px] text-muted-foreground text-center">
+            Science-backed hypertrophy
           </p>
         </div>
       </aside>
@@ -97,16 +130,28 @@ export function Navbar() {
             </div>
             <span className="font-bold text-foreground">Hypertrophy Lab</span>
           </Link>
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            {mobileOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <UserButton />
+            </Show>
+            <button
+              onClick={() => setMobileOpen(!mobileOpen)}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            >
+              {mobileOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -138,6 +183,35 @@ export function Navbar() {
                   </Link>
                 );
               })}
+              <div className="pt-4 border-t border-border mt-3">
+                <Show when="signed-out">
+                  <div className="space-y-2">
+                    <SignInButton mode="modal">
+                      <button
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        Sign In
+                      </button>
+                    </SignInButton>
+                    <SignUpButton mode="modal">
+                      <button
+                        onClick={() => setMobileOpen(false)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium border border-border bg-secondary hover:bg-secondary/80 text-foreground transition-colors"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        Create Account
+                      </button>
+                    </SignUpButton>
+                  </div>
+                </Show>
+                <Show when="signed-in">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 border border-border">
+                    <UserButton showName />
+                  </div>
+                </Show>
+              </div>
             </nav>
           </div>
         </>

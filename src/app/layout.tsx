@@ -1,3 +1,5 @@
+import { ClerkProvider } from "@clerk/nextjs";
+import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -32,15 +34,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} dark`}>
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <TooltipProvider>
+        <ClerkProvider appearance={{ theme: shadcn }}>
+          <TooltipProvider>
           <Navbar />
           {/* Main content area — offset for desktop sidebar and mobile top bar */}
           <main className="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-              {children}
-            </div>
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          {children}
+          </div>
           </main>
-        </TooltipProvider>
+          </TooltipProvider>
+        </ClerkProvider>
       </body>
     </html>
   );
