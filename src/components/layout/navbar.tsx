@@ -13,7 +13,6 @@ import {
   Bot,
   Menu,
   X,
-  Timer,
   LogIn,
   UserPlus,
 } from "lucide-react";
@@ -25,7 +24,6 @@ const navItems = [
   { href: "/log", label: "Log Workout", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Library },
   { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/timer", label: "Rest Timer", icon: Timer },
   { href: "/science", label: "Research", icon: BookOpen },
   { href: "/ai", label: "AI Coach", icon: Bot },
 ];

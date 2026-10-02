@@ -16,7 +16,6 @@ import {
   Flame,
   BookOpen,
   Bot,
-  Timer,
   Layers,
   Clock,
   ChevronRight,
@@ -114,13 +113,6 @@ export default function DashboardPage() {
       description: "50+ exercises with guides",
       icon: Dumbbell,
       gradient: "from-cyan-600 to-cyan-400",
-    },
-    {
-      href: "/timer",
-      label: "Rest Timer",
-      description: "Customizable countdown timer",
-      icon: Timer,
-      gradient: "from-green-600 to-green-400",
     },
     {
       href: "/progress",
