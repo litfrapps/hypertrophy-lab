@@ -37,6 +37,7 @@ export interface WorkoutSet {
 
 export interface WorkoutLog {
   id: string;
+  sessionId?: string; // Group logs belonging to the same workout session
   date: string; // ISO date string
   exerciseId: string;
   exerciseName: string;
@@ -47,7 +48,8 @@ export interface WorkoutLog {
 
 export interface WorkoutSession {
   id: string;
-  date: string;
+  date: string; // ISO date string
+  durationSeconds?: number;
   logs: WorkoutLog[];
   notes?: string;
 }

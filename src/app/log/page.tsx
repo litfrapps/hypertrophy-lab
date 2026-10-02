@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { exercises, muscleGroups, muscleGroupColors } from "@/lib/exercises";
 import { useWorkouts } from "@/hooks/use-workouts";
-import { Exercise, WorkoutSet, WorkoutLog } from "@/types";
+import { Exercise, WorkoutSet, WorkoutLog, WorkoutSession } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,9 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
+  Calendar,
+  Edit2,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -47,16 +50,53 @@ interface SessionExerciseItem {
   timerKey: number;
 }
 
+// Helpers for date and time formatting
+function formatSessionDateTime(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return isoString;
+  }
+}
+
+function toLocalDatetimeInput(dateOrIso?: string | Date): string {
+  const d = dateOrIso ? new Date(dateOrIso) : new Date();
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = d.getFullYear();
+  const month = pad(d.getMonth() + 1);
+  const day = pad(d.getDate());
+  const hours = pad(d.getHours());
+  const minutes = pad(d.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 function WorkoutSessionManager() {
   const searchParams = useSearchParams();
   const preselectedExerciseId = searchParams.get("exercise");
 
-  const { addWorkouts, workouts } = useWorkouts();
+  const {
+    addSession,
+    workouts,
+    sessions,
+    deleteSession,
+    updateSessionDateTime,
+  } = useWorkouts();
 
   // Session State
   const [sessionActive, setSessionActive] = useState<boolean>(false);
   const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
   const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState<number>(0);
+  const [sessionDate, setSessionDate] = useState<string>(new Date().toISOString());
   const [unit, setUnit] = useState<"kg" | "lbs">("kg");
 
   // Exercises planned in this active session
@@ -70,12 +110,27 @@ function WorkoutSessionManager() {
   // Scrolling Timer Picker state
   const [timerPickerExerciseId, setTimerPickerExerciseId] = useState<string | null>(null);
 
+  // Active Session Date/Time Edit Modal
+  const [activeDateModalOpen, setActiveDateModalOpen] = useState<boolean>(false);
+  const [activeDateInputValue, setActiveDateInputValue] = useState<string>("");
+
+  // Saved Session Date/Time Edit Modal
+  const [editSessionModalData, setEditSessionModalData] = useState<{
+    sessionId: string;
+    currentIso: string;
+  } | null>(null);
+  const [editSessionDateInput, setEditSessionDateInput] = useState<string>("");
+
+  // Delete Session Confirmation Modal
+  const [deleteConfirmSession, setDeleteConfirmSession] = useState<WorkoutSession | null>(null);
+
   // Session Completion Modal
   const [finishedSummary, setFinishedSummary] = useState<{
     durationText: string;
     durationSeconds: number;
     totalSets: number;
     totalVolume: number;
+    sessionDate: string;
     exerciseCount: number;
     exercisesSummary: { name: string; setsCount: number; maxWeight: number }[];
   } | null>(null);
@@ -142,6 +197,7 @@ function WorkoutSessionManager() {
     const now = Date.now();
     setSessionStartTime(now);
     setSessionElapsedSeconds(0);
+    setSessionDate(new Date().toISOString());
     setSessionActive(true);
     setFinishedSummary(null);
 
@@ -264,7 +320,6 @@ function WorkoutSessionManager() {
           return {
             ...item,
             sets: updatedSets,
-            // Trigger or restart inline rest timer for this exercise!
             timerActive: justCompleted ? true : item.timerActive,
             timerKey: justCompleted ? item.timerKey + 1 : item.timerKey,
           };
@@ -274,7 +329,6 @@ function WorkoutSessionManager() {
     );
   };
 
-  // Start rest timer manually for an exercise
   const startRestForExercise = (itemId: string) => {
     setSessionExercises((prev) =>
       prev.map((item) =>
@@ -285,7 +339,6 @@ function WorkoutSessionManager() {
     );
   };
 
-  // Dismiss inline timer for an exercise
   const dismissExerciseTimer = (itemId: string) => {
     setSessionExercises((prev) =>
       prev.map((item) =>
@@ -294,20 +347,21 @@ function WorkoutSessionManager() {
     );
   };
 
-  // Finish session
+  // Finish session & save complete session entity
   const finishSession = () => {
     if (sessionExercises.length === 0) {
       setSessionActive(false);
       return;
     }
 
+    const sessionId = crypto.randomUUID();
     const completedLogs: WorkoutLog[] = [];
     let totalCompletedSets = 0;
     let totalVolumeLifted = 0;
     const summaryList: { name: string; setsCount: number; maxWeight: number }[] =
       [];
 
-    const nowISO = new Date().toISOString();
+    const finalSessionDateISO = sessionDate || new Date().toISOString();
 
     sessionExercises.forEach((item) => {
       const finishedSets = item.sets.filter((s) => s.completed);
@@ -316,7 +370,8 @@ function WorkoutSessionManager() {
       if (setsToRecord.length > 0) {
         const log: WorkoutLog = {
           id: crypto.randomUUID(),
-          date: nowISO,
+          sessionId: sessionId,
+          date: finalSessionDateISO,
           exerciseId: item.exercise.id,
           exerciseName: item.exercise.name,
           sets: setsToRecord.map((s) => ({
@@ -345,7 +400,13 @@ function WorkoutSessionManager() {
     });
 
     if (completedLogs.length > 0) {
-      addWorkouts(completedLogs);
+      const newSession: WorkoutSession = {
+        id: sessionId,
+        date: finalSessionDateISO,
+        durationSeconds: sessionElapsedSeconds,
+        logs: completedLogs,
+      };
+      addSession(newSession);
     }
 
     const durationText = formatSessionTime(sessionElapsedSeconds);
@@ -355,12 +416,61 @@ function WorkoutSessionManager() {
       durationSeconds: sessionElapsedSeconds,
       totalSets: totalCompletedSets,
       totalVolume: totalVolumeLifted,
+      sessionDate: finalSessionDateISO,
       exerciseCount: completedLogs.length,
       exercisesSummary: summaryList,
     });
 
     setSessionActive(false);
     setSessionExercises([]);
+  };
+
+  // Open active date modal
+  const openActiveDateModal = () => {
+    setActiveDateInputValue(toLocalDatetimeInput(sessionDate));
+    setActiveDateModalOpen(true);
+  };
+
+  // Save active session date
+  const saveActiveDate = () => {
+    if (activeDateInputValue) {
+      const parsed = new Date(activeDateInputValue);
+      if (!isNaN(parsed.getTime())) {
+        setSessionDate(parsed.toISOString());
+      }
+    }
+    setActiveDateModalOpen(false);
+  };
+
+  // Open saved session date edit modal
+  const openEditSessionDateModal = (session: WorkoutSession) => {
+    setEditSessionModalData({
+      sessionId: session.id,
+      currentIso: session.date,
+    });
+    setEditSessionDateInput(toLocalDatetimeInput(session.date));
+  };
+
+  // Save edited date for a saved session
+  const saveEditedSessionDate = () => {
+    if (editSessionModalData && editSessionDateInput) {
+      const parsed = new Date(editSessionDateInput);
+      if (!isNaN(parsed.getTime())) {
+        updateSessionDateTime(
+          editSessionModalData.sessionId,
+          parsed.toISOString()
+        );
+      }
+    }
+    setEditSessionModalData(null);
+  };
+
+  // Confirm delete of a saved session
+  const handleDeleteSessionConfirm = () => {
+    if (deleteConfirmSession) {
+      deleteSession(deleteConfirmSession.id);
+      setDeleteConfirmSession(null);
+    }
   };
 
   // Selected item for scrolling picker
@@ -381,6 +491,10 @@ function WorkoutSessionManager() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Session Completed!
           </h1>
+          <div className="text-xs text-blue-400 font-mono flex items-center justify-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>{formatSessionDateTime(finishedSummary.sessionDate)}</span>
+          </div>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
             Progressive overload recorded for your progressive graphs.
           </p>
@@ -426,7 +540,7 @@ function WorkoutSessionManager() {
                   </div>
                 </div>
                 <div className="text-right font-mono font-bold text-blue-400">
-                  {ex.maxWeight} {unit}
+                  Top: {ex.maxWeight} {unit}
                 </div>
               </div>
             ))}
@@ -444,7 +558,7 @@ function WorkoutSessionManager() {
             onClick={() => setFinishedSummary(null)}
             className="flex-1 h-10 border-border text-xs text-muted-foreground hover:text-foreground"
           >
-            Start Another Session
+            Session List
           </Button>
         </div>
       </div>
@@ -476,23 +590,32 @@ function WorkoutSessionManager() {
       <div className="space-y-3.5 max-w-3xl mx-auto pb-24 px-1 sm:px-0">
         {/* Compact Sticky Session Bar */}
         <div className="sticky top-16 lg:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-3.5 sm:px-6 py-2 bg-card/95 backdrop-blur-md border-b border-border/60 shadow-md">
-          <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto">
-            {/* Live Clock & Sets */}
+          <div className="flex flex-wrap items-center justify-between gap-2 max-w-3xl mx-auto">
+            {/* Live Clock & Date Adjuster */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold text-sm">
                 <Clock className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                 <span>{formatSessionTime(sessionElapsedSeconds)}</span>
               </div>
-              <div className="text-[11px] text-muted-foreground hidden xs:block">
-                <span className="font-semibold text-foreground">
-                  {totalCompletedSets}/{totalPlannedSets}
-                </span>{" "}
-                sets •{" "}
-                <span className="font-mono text-cyan-400">
-                  {liveVolume.toLocaleString()}
-                </span>{" "}
-                {unit}
-              </div>
+
+              {/* Adjust Session Date & Time Button */}
+              <button
+                type="button"
+                onClick={openActiveDateModal}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/70 hover:bg-secondary border border-border/50 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                title="Adjust session date & time"
+              >
+                <Calendar className="w-3 h-3 text-cyan-400" />
+                <span className="truncate max-w-[130px] sm:max-w-none">
+                  {new Date(sessionDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </span>
+                <Edit2 className="w-2.5 h-2.5 opacity-60 ml-0.5" />
+              </button>
             </div>
 
             {/* Right Controls: Unit & Finish */}
@@ -792,6 +915,81 @@ function WorkoutSessionManager() {
           />
         )}
 
+        {/* Active Session Date & Time Modal */}
+        {activeDateModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+            <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-2xl shadow-2xl p-4 space-y-4">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-cyan-400" />
+                  <h3 className="font-bold text-sm text-foreground">
+                    Adjust Session Date & Time
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveDateModalOpen(false)}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground block">
+                  Workout Date & Time:
+                </label>
+                <Input
+                  type="datetime-local"
+                  value={activeDateInputValue}
+                  onChange={(e) => setActiveDateInputValue(e.target.value)}
+                  className="bg-secondary/40 border-border/60 h-10 text-sm font-mono text-foreground"
+                />
+              </div>
+
+              {/* Quick Preset Buttons */}
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setActiveDateInputValue(toLocalDatetimeInput())}
+                  className="px-2 py-1 rounded bg-secondary/80 hover:bg-secondary text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Set to Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    setActiveDateInputValue(toLocalDatetimeInput(yesterday));
+                  }}
+                  className="px-2 py-1 rounded bg-secondary/80 hover:bg-secondary text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Yesterday
+                </button>
+              </div>
+
+              <div className="flex gap-2 pt-2 border-t border-border/50">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveDateModalOpen(false)}
+                  className="flex-1 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={saveActiveDate}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                >
+                  Apply
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Compact Exercise Picker Modal */}
         {pickerOpen && (
           <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
@@ -911,7 +1109,7 @@ function WorkoutSessionManager() {
   }
 
   // ----------------------------------------------------
-  // RENDER: Pre-Session Landing View (Start a Session)
+  // RENDER: Pre-Session Landing View (Start a Session + Session History)
   // ----------------------------------------------------
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-2 px-1 sm:px-0">
@@ -1042,32 +1240,262 @@ function WorkoutSessionManager() {
         </div>
       </div>
 
-      {/* Past Stats Quick Glance */}
-      <div className="rounded-xl border border-border/60 bg-card p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <Dumbbell className="w-4 h-4" />
+      {/* ---------------------------------------------------- */}
+      {/* LOGGED WORKOUT SESSIONS (Date & Time + Delete Features) */}
+      {/* ---------------------------------------------------- */}
+      <div className="space-y-3 pt-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-400" />
+            <h2 className="text-sm font-bold text-foreground">
+              Logged Workout Sessions
+            </h2>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono font-bold">
+              {sessions.length}
+            </span>
           </div>
-          <div>
-            <div className="text-xs font-semibold">
-              {workouts.length} Total Exercises Logged
+          <span className="text-[11px] text-muted-foreground">
+            Adjust date/time or delete
+          </span>
+        </div>
+
+        {sessions.length === 0 ? (
+          <div className="rounded-xl border border-border/60 bg-card p-6 text-center space-y-2">
+            <Clock className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+            <div className="text-xs font-semibold text-foreground">
+              No sessions logged yet
             </div>
-            <div className="text-[11px] text-muted-foreground">
-              All sets are plotted into your progressive overload graph
+            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+              Start a session above. Completed sessions will appear here with full date/time editing and deletion controls.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {sessions.map((session) => {
+              const totalSetsCount = session.logs.reduce(
+                (sum, l) => sum + l.sets.length,
+                0
+              );
+              const totalVol = session.logs.reduce(
+                (sum, l) =>
+                  sum + l.sets.reduce((sSum, s) => sSum + s.reps * s.weight, 0),
+                0
+              );
+              const unitUsed = session.logs[0]?.unit || "kg";
+
+              return (
+                <div
+                  key={session.id}
+                  className="rounded-xl border border-border/60 bg-card p-3.5 hover:border-border/80 transition-all space-y-2.5 shadow-sm"
+                >
+                  {/* Top Bar: Date, Time & Actions */}
+                  <div className="flex items-start justify-between gap-2 border-b border-border/30 pb-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                        <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                        <span>{formatSessionDateTime(session.date)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                        {session.durationSeconds && session.durationSeconds > 0 ? (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-cyan-400" />
+                            {formatSessionTime(session.durationSeconds)}
+                          </span>
+                        ) : null}
+                        <span>•</span>
+                        <span>{session.logs.length} exercises</span>
+                        <span>•</span>
+                        <span>{totalSetsCount} sets</span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons: Edit Date/Time & Delete */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditSessionDateModal(session)}
+                        className="h-7 px-2 text-[11px] text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
+                        title="Adjust session date & time"
+                      >
+                        <Edit2 className="w-3 h-3 mr-1" />
+                        <span>Date/Time</span>
+                      </Button>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteConfirmSession(session)}
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        title="Delete this session"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Exercises Pill Breakdown */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {session.logs.map((log) => {
+                      const maxWt = Math.max(...log.sets.map((s) => s.weight));
+                      return (
+                        <div
+                          key={log.id}
+                          className="px-2 py-1 rounded-md bg-secondary/40 border border-border/40 text-[10px] font-medium text-foreground flex items-center gap-1.5"
+                        >
+                          <span className="font-semibold truncate max-w-[130px] sm:max-w-none">
+                            {log.exerciseName}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {log.sets.length} sets
+                          </span>
+                          <span className="font-mono text-blue-400 font-bold">
+                            {maxWt} {log.unit}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer Volume */}
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/20 text-muted-foreground">
+                    <span>Total Session Volume:</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {totalVol.toLocaleString()} {unitUsed}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL: Edit Saved Session Date & Time */}
+      {/* ---------------------------------------------------- */}
+      {editSessionModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+          <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-2xl shadow-2xl p-4 space-y-4">
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-400" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Adjust Session Date & Time
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditSessionModalData(null)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground block">
+                Select Date & Time for this Session:
+              </label>
+              <Input
+                type="datetime-local"
+                value={editSessionDateInput}
+                onChange={(e) => setEditSessionDateInput(e.target.value)}
+                className="bg-secondary/40 border-border/60 h-10 text-sm font-mono text-foreground"
+              />
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setEditSessionDateInput(toLocalDatetimeInput())}
+                className="px-2 py-1 rounded bg-secondary/80 hover:bg-secondary text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Set to Now
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const yesterday = new Date();
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  setEditSessionDateInput(toLocalDatetimeInput(yesterday));
+                }}
+                className="px-2 py-1 rounded bg-secondary/80 hover:bg-secondary text-[10px] text-muted-foreground hover:text-foreground"
+              >
+                Yesterday
+              </button>
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-border/50">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditSessionModalData(null)}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveEditedSessionDate}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+              >
+                Save Date & Time
+              </Button>
             </div>
           </div>
         </div>
+      )}
 
-        <Link href="/progress">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-blue-400 hover:text-white h-8"
-          >
-            View Graph <ArrowRight className="w-3 h-3 ml-1" />
-          </Button>
-        </Link>
-      </div>
+      {/* ---------------------------------------------------- */}
+      {/* MODAL: Delete Session Confirmation */}
+      {/* ---------------------------------------------------- */}
+      {deleteConfirmSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+          <div className="relative w-full max-w-sm bg-card border border-destructive/40 rounded-2xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-foreground">
+                  Delete Workout Session?
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {formatSessionDateTime(deleteConfirmSession.date)}
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Are you sure you want to delete this session? This will permanently remove{" "}
+              <strong className="text-foreground">
+                {deleteConfirmSession.logs.length} exercise logs
+              </strong>{" "}
+              from your history and progressive overload charts.
+            </p>
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirmSession(null)}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDeleteSessionConfirm}
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-white text-xs font-semibold"
+              >
+                Delete Session
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
