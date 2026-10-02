@@ -140,23 +140,21 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 via-cyan-600/10 to-purple-600/20 border border-border p-6 sm:p-8">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600/20 via-cyan-600/10 to-purple-600/20 border border-border px-4 py-3 sm:px-5 sm:py-3.5">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.15),transparent_50%)]" />
-        <div className="relative">
-          <div className="flex items-center gap-2 mb-2">
-            <Flame className="w-5 h-5 text-orange-400" />
-            <span className="text-sm font-medium text-orange-400">
-              Science-Backed Training
-            </span>
+        <div className="relative flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <Flame className="w-4 h-4 text-orange-400 shrink-0" />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
-            Welcome to{" "}
-            <span className="gradient-text">Hypertrophy Lab</span>
-          </h1>
-          <p className="text-muted-foreground max-w-lg">
-            Track your workouts, visualize progress, and optimize your training
-            with peer-reviewed science from researchers like Brad Schoenfeld.
-          </p>
+          <div>
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight leading-tight">
+              Welcome to{" "}
+              <span className="gradient-text">Hypertrophy Lab</span>
+            </h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Science-backed training tracker — log workouts, visualize progress &amp; optimize your gains.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -264,16 +262,16 @@ export default function DashboardPage() {
               const isValidDate = !isNaN(sessionDate.getTime());
               const dateString = isValidDate
                 ? sessionDate.toLocaleDateString("en-US", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })
                 : session.date;
               const timeString = isValidDate
                 ? sessionDate.toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })
+                  hour: "numeric",
+                  minute: "2-digit",
+                })
                 : null;
 
               const exerciseCount = session.logs?.length || 0;

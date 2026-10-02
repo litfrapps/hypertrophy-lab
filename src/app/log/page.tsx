@@ -1,14 +1,25 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef, Suspense } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { exercises, muscleGroups, muscleGroupColors } from "@/lib/exercises";
 import { useWorkouts } from "@/hooks/use-workouts";
+import { useSession } from "@/contexts/session-context";
 import { Exercise, WorkoutSet, WorkoutLog, WorkoutSession } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ScrollingTimerPicker,
   formatIntervalLabel,
@@ -33,19 +44,21 @@ import {
   Calendar,
   Edit2,
   AlertTriangle,
+  Layers,
+  Ban,
 } from "lucide-react";
 import Link from "next/link";
 
+// Local types only used inside the active session (sets extended with completion state)
 interface SessionExerciseSet extends WorkoutSet {
   completed: boolean;
 }
 
 interface SessionExerciseItem {
-  id: string; // unique item id in session
+  id: string;
   exercise: Exercise;
-  restTimerSeconds: number; // custom rest timer for this exercise (15s - 300s)
+  restTimerSeconds: number;
   sets: SessionExerciseSet[];
-  // Inline timer state for this exercise
   timerActive: boolean;
   timerKey: number;
 }
@@ -80,29 +93,134 @@ function toLocalDatetimeInput(dateOrIso?: string | Date): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+// ─── Custom Routine Types ───────────────────────────────────────────────────
+interface SavedRoutine {
+  id: string;
+  name: string;
+  exerciseIds: string[];
+}
+
+const ROUTINES_KEY = "hypertrophy_custom_routines";
+
+function loadRoutines(): SavedRoutine[] {
+  try {
+    const raw = localStorage.getItem(ROUTINES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRoutinesToStorage(routines: SavedRoutine[]) {
+  try {
+    localStorage.setItem(ROUTINES_KEY, JSON.stringify(routines));
+  } catch {}
+}
+
 function WorkoutSessionManager() {
   const searchParams = useSearchParams();
   const preselectedExerciseId = searchParams.get("exercise");
 
   const {
     addSession,
-    workouts,
     sessions,
     deleteSession,
     updateSessionDateTime,
+    getLastEntryForExercise,
   } = useWorkouts();
 
-  // Session State
-  const [sessionActive, setSessionActive] = useState<boolean>(false);
-  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null);
-  const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState<number>(0);
-  const [sessionDate, setSessionDate] = useState<string>(new Date().toISOString());
-  const [unit, setUnit] = useState<"kg" | "lbs">("kg");
+  // ─── Global Session Context ───────────────────────────────────────────────
+  const {
+    isActive: sessionActive,
+    elapsedSeconds: sessionElapsedSeconds,
+    sessionDate,
+    unit,
+    exercises: sessionExercises,
+    startSession: ctxStartSession,
+    cancelSession: ctxCancelSession,
+    setSessionDate,
+    setUnit,
+    setExercises: setSessionExercises,
+  } = useSession();
 
-  // Exercises planned in this active session
-  const [sessionExercises, setSessionExercises] = useState<SessionExerciseItem[]>([]);
+  // ─── Custom Routines State ────────────────────────────────────────────────
+  const [savedRoutines, setSavedRoutines] = useState<SavedRoutine[]>(() => loadRoutines());
+  const [routineBuilderOpen, setRoutineBuilderOpen] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState<SavedRoutine | null>(null);
+  const [routineName, setRoutineName] = useState("");
+  const [routineExerciseIds, setRoutineExerciseIds] = useState<string[]>([]);
+  const [routinePickerOpen, setRoutinePickerOpen] = useState(false);
+  const [routinePickerSearch, setRoutinePickerSearch] = useState("");
+  const [routinePickerMuscle, setRoutinePickerMuscle] = useState("");
+  const [deleteRoutineId, setDeleteRoutineId] = useState<string | null>(null);
 
-  // Exercise Picker Modal
+  const persistRoutines = useCallback((routines: SavedRoutine[]) => {
+    setSavedRoutines(routines);
+    saveRoutinesToStorage(routines);
+  }, []);
+
+  const openNewRoutineBuilder = () => {
+    setEditingRoutine(null);
+    setRoutineName("");
+    setRoutineExerciseIds([]);
+    setRoutineBuilderOpen(true);
+  };
+
+  const openEditRoutineBuilder = (routine: SavedRoutine) => {
+    setEditingRoutine(routine);
+    setRoutineName(routine.name);
+    setRoutineExerciseIds([...routine.exerciseIds]);
+    setRoutineBuilderOpen(true);
+  };
+
+  const saveRoutine = () => {
+    if (!routineName.trim() || routineExerciseIds.length === 0) return;
+    if (editingRoutine) {
+      const updated = savedRoutines.map((r) =>
+        r.id === editingRoutine.id
+          ? { ...r, name: routineName.trim(), exerciseIds: routineExerciseIds }
+          : r
+      );
+      persistRoutines(updated);
+    } else {
+      const newRoutine: SavedRoutine = {
+        id: crypto.randomUUID(),
+        name: routineName.trim(),
+        exerciseIds: routineExerciseIds,
+      };
+      persistRoutines([...savedRoutines, newRoutine]);
+    }
+    setRoutineBuilderOpen(false);
+  };
+
+  const confirmDeleteRoutine = () => {
+    if (!deleteRoutineId) return;
+    persistRoutines(savedRoutines.filter((r) => r.id !== deleteRoutineId));
+    setDeleteRoutineId(null);
+  };
+
+  const launchRoutine = (routine: SavedRoutine) => {
+    const exs = routine.exerciseIds
+      .map((id) => exercises.find((e) => e.id === id))
+      .filter(Boolean) as typeof exercises;
+    startNewSession(exs);
+  };
+
+  const filteredRoutinePickerExercises = useMemo(() => {
+    return exercises.filter((e) => {
+      const matchSearch =
+        !routinePickerSearch ||
+        e.name.toLowerCase().includes(routinePickerSearch.toLowerCase()) ||
+        e.primaryMuscle.toLowerCase().includes(routinePickerSearch.toLowerCase());
+      const matchMuscle =
+        !routinePickerMuscle ||
+        e.primaryMuscle === routinePickerMuscle ||
+        e.secondaryMuscle === routinePickerMuscle;
+      return matchSearch && matchMuscle;
+    });
+  }, [routinePickerSearch, routinePickerMuscle]);
+
+  // ─── Exercise Picker Modal State ──────────────────────────────────────────
   const [pickerOpen, setPickerOpen] = useState<boolean>(false);
   const [pickerSearch, setPickerSearch] = useState<string>("");
   const [pickerMuscle, setPickerMuscle] = useState<string>("");
@@ -124,6 +242,9 @@ function WorkoutSessionManager() {
   // Delete Session Confirmation Modal
   const [deleteConfirmSession, setDeleteConfirmSession] = useState<WorkoutSession | null>(null);
 
+  // ─── Cancel Session AlertDialog ───────────────────────────────────────────
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+
   // Session Completion Modal
   const [finishedSummary, setFinishedSummary] = useState<{
     durationText: string;
@@ -135,23 +256,6 @@ function WorkoutSessionManager() {
     exercisesSummary: { name: string; setsCount: number; maxWeight: number }[];
   } | null>(null);
 
-  // Session duration timer loop
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (sessionActive && sessionStartTime) {
-      timerIntervalRef.current = setInterval(() => {
-        const now = Date.now();
-        setSessionElapsedSeconds(Math.floor((now - sessionStartTime) / 1000));
-      }, 1000);
-    } else {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    }
-    return () => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    };
-  }, [sessionActive, sessionStartTime]);
-
   // Pre-load exercise if URL has ?exercise=
   useEffect(() => {
     if (preselectedExerciseId && !sessionActive) {
@@ -160,6 +264,7 @@ function WorkoutSessionManager() {
         startNewSession([ex]);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedExerciseId]);
 
   // Filter exercises in picker
@@ -193,30 +298,45 @@ function WorkoutSessionManager() {
       .padStart(2, "0")}`;
   };
 
-  const startNewSession = (initialExercises: Exercise[] = []) => {
-    const now = Date.now();
-    setSessionStartTime(now);
-    setSessionElapsedSeconds(0);
-    setSessionDate(new Date().toISOString());
-    setSessionActive(true);
-    setFinishedSummary(null);
+  // Build initial sets for an exercise, using last-entry values if available
+  const buildInitialSets = useCallback(
+    (ex: Exercise): SessionExerciseSet[] => {
+      const last = getLastEntryForExercise(ex.id);
+      if (last && last.length > 0) {
+        return last.map((s, idx) => ({
+          setNumber: idx + 1,
+          reps: s.reps,
+          weight: s.weight,
+          completed: false,
+        }));
+      }
+      // Default 3 sets
+      return [
+        { setNumber: 1, reps: 8, weight: 60, completed: false },
+        { setNumber: 2, reps: 8, weight: 60, completed: false },
+        { setNumber: 3, reps: 8, weight: 60, completed: false },
+      ];
+    },
+    [getLastEntryForExercise]
+  );
 
+  const startNewSession = (initialExercises: Exercise[] = []) => {
+    setFinishedSummary(null);
     if (initialExercises.length > 0) {
-      const items: SessionExerciseItem[] = initialExercises.map((ex) => ({
-        id: crypto.randomUUID(),
-        exercise: ex,
-        restTimerSeconds: 120, // default 2 minutes
-        timerActive: false,
-        timerKey: 0,
-        sets: [
-          { setNumber: 1, reps: 8, weight: 60, completed: false },
-          { setNumber: 2, reps: 8, weight: 60, completed: false },
-          { setNumber: 3, reps: 8, weight: 60, completed: false },
-        ],
-      }));
-      setSessionExercises(items);
+      ctxStartSession(initialExercises);
+      // Override default sets with last-entry values
+      setSessionExercises(
+        initialExercises.map((ex) => ({
+          id: crypto.randomUUID(),
+          exercise: ex,
+          restTimerSeconds: 120,
+          timerActive: false,
+          timerKey: 0,
+          sets: buildInitialSets(ex),
+        }))
+      );
     } else {
-      setSessionExercises([]);
+      ctxStartSession([]);
       setPickerOpen(true);
     }
   };
@@ -228,11 +348,7 @@ function WorkoutSessionManager() {
       restTimerSeconds: 120,
       timerActive: false,
       timerKey: 0,
-      sets: [
-        { setNumber: 1, reps: 8, weight: 60, completed: false },
-        { setNumber: 2, reps: 8, weight: 60, completed: false },
-        { setNumber: 3, reps: 8, weight: 60, completed: false },
-      ],
+      sets: buildInitialSets(exercise),
     };
     setSessionExercises((prev) => [...prev, newItem]);
     setPickerOpen(false);
@@ -350,7 +466,7 @@ function WorkoutSessionManager() {
   // Finish session & save complete session entity
   const finishSession = () => {
     if (sessionExercises.length === 0) {
-      setSessionActive(false);
+      ctxCancelSession();
       return;
     }
 
@@ -421,8 +537,7 @@ function WorkoutSessionManager() {
       exercisesSummary: summaryList,
     });
 
-    setSessionActive(false);
-    setSessionExercises([]);
+    ctxCancelSession();
   };
 
   // Open active date modal
@@ -650,6 +765,16 @@ function WorkoutSessionManager() {
               >
                 <Check className="w-3.5 h-3.5 mr-1" /> Finish
               </Button>
+
+              {/* Cancel Workout Button */}
+              <button
+                type="button"
+                onClick={() => setCancelConfirmOpen(true)}
+                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                title="Cancel workout — discard all sets"
+              >
+                <Ban className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -792,39 +917,61 @@ function WorkoutSessionManager() {
                           </div>
 
                           {/* Weight input */}
-                          <Input
-                            type="number"
-                            min={0}
-                            step={0.5}
-                            value={set.weight || ""}
-                            onChange={(e) =>
-                              updateSetValues(
-                                item.id,
-                                setIdx,
-                                "weight",
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            placeholder="0"
-                            className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
-                          />
+                          <div className="flex flex-col gap-0.5">
+                            <Input
+                              type="number"
+                              min={0}
+                              step={0.5}
+                              value={set.weight || ""}
+                              onChange={(e) =>
+                                updateSetValues(
+                                  item.id,
+                                  setIdx,
+                                  "weight",
+                                  parseFloat(e.target.value) || 0
+                                )
+                              }
+                              placeholder="0"
+                              className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
+                            />
+                            {(() => {
+                              const last = getLastEntryForExercise(item.exercise.id);
+                              const prev = last?.[setIdx]?.weight;
+                              return prev !== undefined ? (
+                                <span className="text-[9px] text-center text-muted-foreground/50 leading-none">
+                                  prev: {prev}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
 
                           {/* Reps input */}
-                          <Input
-                            type="number"
-                            min={1}
-                            value={set.reps || ""}
-                            onChange={(e) =>
-                              updateSetValues(
-                                item.id,
-                                setIdx,
-                                "reps",
-                                parseInt(e.target.value) || 0
-                              )
-                            }
-                            placeholder="8"
-                            className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
-                          />
+                          <div className="flex flex-col gap-0.5">
+                            <Input
+                              type="number"
+                              min={1}
+                              value={set.reps || ""}
+                              onChange={(e) =>
+                                updateSetValues(
+                                  item.id,
+                                  setIdx,
+                                  "reps",
+                                  parseInt(e.target.value) || 0
+                                )
+                              }
+                              placeholder="8"
+                              className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
+                            />
+                            {(() => {
+                              const last = getLastEntryForExercise(item.exercise.id);
+                              const prev = last?.[setIdx]?.reps;
+                              return prev !== undefined ? (
+                                <span className="text-[9px] text-center text-muted-foreground/50 leading-none">
+                                  prev: {prev}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
 
                           {/* Checkmark Button */}
                           <button
@@ -893,6 +1040,14 @@ function WorkoutSessionManager() {
               >
                 <Check className="w-4 h-4 mr-1.5" /> Finish Workout ({formatSessionTime(sessionElapsedSeconds)})
               </Button>
+
+              <Button
+                onClick={() => setCancelConfirmOpen(true)}
+                variant="outline"
+                className="h-11 border-destructive/40 text-destructive hover:bg-destructive/10 font-semibold text-xs sm:text-sm rounded-xl"
+              >
+                <Ban className="w-4 h-4 mr-1.5" /> Cancel
+              </Button>
             </div>
           </div>
         )}
@@ -909,6 +1064,34 @@ function WorkoutSessionManager() {
             }
           />
         )}
+
+        {/* ── Cancel Workout AlertDialog ─────────────────── */}
+        <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Ban className="w-4 h-4 text-destructive" />
+                Cancel Workout?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This will discard all logged sets from your current session.
+                Your workout history won&apos;t be affected.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Keep Going</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  ctxCancelSession();
+                  setCancelConfirmOpen(false);
+                }}
+                className="bg-destructive hover:bg-destructive/90 text-white"
+              >
+                Yes, Cancel Workout
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Active Session Date & Time Modal */}
         {activeDateModalOpen && (
@@ -1106,132 +1289,391 @@ function WorkoutSessionManager() {
   // ----------------------------------------------------
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-2 px-1 sm:px-0">
-      {/* Header Banner (Compact & Clean) */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/15 via-cyan-600/10 to-indigo-600/15 border border-blue-500/20 p-5 sm:p-7">
-        <div className="flex items-center gap-1.5 mb-1.5 text-blue-400 text-xs font-semibold">
-          <Flame className="w-4 h-4 text-blue-400" />
-          <span>Hypertrophy Session Mode</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          Workout Logger
-        </h1>
-        <p className="text-muted-foreground mt-1.5 max-w-md leading-relaxed text-xs sm:text-sm">
-          Plan multiple exercises, pre-set weights & reps, and track your workout duration with exercise-specific rest countdowns.
-        </p>
-
-        {/* Big Start a Session CTA */}
-        <div className="pt-4">
+      {/* Header Banner — Compact */}
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600/15 via-cyan-600/10 to-indigo-600/15 border border-blue-500/20 px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Flame className="w-4 h-4 text-blue-400 shrink-0" />
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-extrabold tracking-tight leading-tight">
+                Workout Logger
+              </h1>
+              <p className="text-[11px] text-muted-foreground mt-0.5 hidden sm:block">
+                Plan exercises, log sets &amp; reps, track rest timers.
+              </p>
+            </div>
+          </div>
           <Button
             onClick={() => startNewSession([])}
-            size="lg"
-            className="h-12 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-500/20 rounded-xl group transition-all duration-200"
+            size="sm"
+            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 rounded-lg shrink-0"
           >
-            <Play className="w-4 h-4 mr-2.5 fill-current" />
-            Start a Session
+            <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
+            Start Session
           </Button>
         </div>
       </div>
 
-      {/* Quick Setup Routines */}
+      {/* ── My Routines ──────────────────────────────────────── */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            Quick Routines
-          </h2>
-          <span className="text-[11px] text-muted-foreground">
-            1-Tap Multi-Exercise
-          </span>
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-purple-400" />
+            <h2 className="text-sm font-bold text-foreground">My Routines</h2>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-mono font-bold">
+              {savedRoutines.length}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={openNewRoutineBuilder}
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-purple-300 text-[11px] font-semibold transition-all"
+          >
+            <Plus className="w-3 h-3" /> New Routine
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-          {/* Push Routine */}
+        {savedRoutines.length === 0 ? (
           <div
-            onClick={() => {
-              const pushExs = exercises.filter((e) =>
-                [
-                  "flat-barbell-bench-press",
-                  "incline-dumbbell-press",
-                  "lateral-raises",
-                  "tricep-pushdown",
-                ].includes(e.id)
-              );
-              startNewSession(pushExs);
-            }}
-            className="cursor-pointer rounded-xl border border-border/70 bg-card hover:bg-secondary/40 hover:border-blue-500/40 transition-all p-3 group"
+            onClick={openNewRoutineBuilder}
+            className="cursor-pointer rounded-xl border border-dashed border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-5 text-center space-y-1.5 group"
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">
-                Push Day
-              </span>
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+            <div className="w-9 h-9 rounded-lg bg-purple-500/15 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
+              <Plus className="w-4 h-4 text-purple-400" />
             </div>
-            <h3 className="font-semibold text-xs text-foreground">
-              Chest, Shoulders & Triceps
-            </h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              4 exercises • Bench, Incline DB, Lateral Raises, Pushdowns
+            <p className="text-xs font-semibold text-foreground">Create your first routine</p>
+            <p className="text-[11px] text-muted-foreground">
+              Name it, pick exercises, and launch it in one tap anytime.
             </p>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {savedRoutines.map((routine) => {
+              const exNames = routine.exerciseIds
+                .map((id) => exercises.find((e) => e.id === id)?.name)
+                .filter(Boolean);
+              return (
+                <div
+                  key={routine.id}
+                  className="rounded-xl border border-border/70 bg-card hover:border-purple-500/30 transition-all p-3 group flex flex-col gap-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <Layers className="w-3 h-3 text-purple-400 shrink-0" />
+                        <span className="text-xs font-bold text-foreground truncate">{routine.name}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {exNames.length} {exNames.length === 1 ? "exercise" : "exercises"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openEditRoutineBuilder(routine)}
+                        className="p-1 rounded text-muted-foreground/50 hover:text-blue-400 transition-colors"
+                        title="Edit routine"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteRoutineId(routine.id)}
+                        className="p-1 rounded text-muted-foreground/50 hover:text-destructive transition-colors"
+                        title="Delete routine"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
 
-          {/* Pull Routine */}
-          <div
-            onClick={() => {
-              const pullExs = exercises.filter((e) =>
-                [
-                  "barbell-row",
-                  "lat-pulldown",
-                  "face-pulls",
-                  "barbell-curl",
-                ].includes(e.id)
-              );
-              startNewSession(pullExs);
-            }}
-            className="cursor-pointer rounded-xl border border-border/70 bg-card hover:bg-secondary/40 hover:border-cyan-500/40 transition-all p-3 group"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-400">
-                Pull Day
-              </span>
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            </div>
-            <h3 className="font-semibold text-xs text-foreground">
-              Back, Rear Delts & Biceps
-            </h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              4 exercises • Row, Lat Pulldown, Face Pulls, Curls
-            </p>
-          </div>
+                  {/* Exercise name pills */}
+                  <div className="flex flex-wrap gap-1">
+                    {exNames.slice(0, 4).map((name, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded-md bg-secondary/50 border border-border/40 text-[10px] text-muted-foreground truncate max-w-[120px]"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                    {exNames.length > 4 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-secondary/40 border border-border/30 text-[10px] text-muted-foreground">
+                        +{exNames.length - 4} more
+                      </span>
+                    )}
+                  </div>
 
-          {/* Leg Routine */}
-          <div
-            onClick={() => {
-              const legExs = exercises.filter((e) =>
-                [
-                  "barbell-squat",
-                  "romanian-deadlift",
-                  "leg-extension",
-                  "standing-calf-raise",
-                ].includes(e.id)
+                  <button
+                    type="button"
+                    onClick={() => launchRoutine(routine)}
+                    className="w-full h-8 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Play className="w-3 h-3 fill-current" /> Launch Routine
+                  </button>
+                </div>
               );
-              startNewSession(legExs);
-            }}
-            className="cursor-pointer rounded-xl border border-border/70 bg-card hover:bg-secondary/40 hover:border-green-500/40 transition-all p-3 group"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-green-400">
-                Leg Day
-              </span>
-              <Sparkles className="w-3.5 h-3.5 text-green-400" />
-            </div>
-            <h3 className="font-semibold text-xs text-foreground">
-              Quads, Hamstrings & Calves
-            </h3>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              4 exercises • Squats, RDL, Leg Extension, Calves
-            </p>
+            })}
           </div>
-        </div>
+        )}
       </div>
+
+      {/* ── Routine Builder Modal ──────────────────────────── */}
+      {routineBuilderOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+          <div
+            className="fixed inset-0"
+            onClick={() => setRoutineBuilderOpen(false)}
+          />
+          <div className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl z-10 overflow-hidden">
+            {/* Header */}
+            <div className="p-4 border-b border-border/60 flex items-center justify-between bg-secondary/20">
+              <div>
+                <h3 className="font-bold text-sm text-foreground">
+                  {editingRoutine ? "Edit Routine" : "Create Routine"}
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Name your routine and add exercises.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRoutineBuilderOpen(false)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body — scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Routine Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Routine Name</label>
+                <Input
+                  placeholder="e.g. Push Day A, Upper Body..."
+                  value={routineName}
+                  onChange={(e) => setRoutineName(e.target.value)}
+                  className="h-9 bg-secondary/40 border-border/60 text-sm"
+                />
+              </div>
+
+              {/* Selected Exercises */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground">
+                    Exercises
+                    {routineExerciseIds.length > 0 && (
+                      <span className="ml-1.5 text-[10px] text-purple-400 font-mono">({routineExerciseIds.length})</span>
+                    )}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => { setRoutinePickerSearch(""); setRoutinePickerMuscle(""); setRoutinePickerOpen(true); }}
+                    className="text-[11px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add Exercise
+                  </button>
+                </div>
+
+                {routineExerciseIds.length === 0 ? (
+                  <div
+                    onClick={() => { setRoutinePickerSearch(""); setRoutinePickerMuscle(""); setRoutinePickerOpen(true); }}
+                    className="cursor-pointer rounded-lg border border-dashed border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-4 text-center"
+                  >
+                    <p className="text-[11px] text-muted-foreground">No exercises yet — tap to add</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {routineExerciseIds.map((exId, idx) => {
+                      const ex = exercises.find((e) => e.id === exId);
+                      if (!ex) return null;
+                      const pColors = muscleGroupColors[ex.primaryMuscle];
+                      return (
+                        <div
+                          key={exId}
+                          className="flex items-center gap-2.5 p-2 rounded-lg bg-secondary/30 border border-border/40"
+                        >
+                          <span className="text-[10px] font-mono text-muted-foreground w-4 text-center shrink-0">{idx + 1}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-semibold truncate">{ex.name}</div>
+                            <span className={`text-[9px] font-semibold ${pColors.text}`}>{ex.primaryMuscle}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setRoutineExerciseIds((prev) => prev.filter((id) => id !== exId))}
+                            className="p-1 rounded text-muted-foreground/50 hover:text-destructive transition-colors shrink-0"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-border/60 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setRoutineBuilderOpen(false)}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={saveRoutine}
+                disabled={!routineName.trim() || routineExerciseIds.length === 0}
+                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold disabled:opacity-40"
+              >
+                {editingRoutine ? "Save Changes" : "Save Routine"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Exercise Picker for Routine Builder ───────────── */}
+      {routinePickerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+          <div className="fixed inset-0" onClick={() => setRoutinePickerOpen(false)} />
+          <div className="relative w-full max-w-lg max-h-[80vh] flex flex-col border border-border/80 bg-card rounded-t-2xl sm:rounded-2xl shadow-2xl z-10 overflow-hidden">
+            <div className="p-3.5 border-b border-border/60 flex items-center justify-between bg-secondary/20">
+              <div>
+                <h3 className="font-bold text-sm">Add to Routine</h3>
+                <p className="text-[11px] text-muted-foreground">Select exercises to include</p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setRoutinePickerOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="p-3 space-y-2 border-b border-border/40">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search exercise or muscle..."
+                  value={routinePickerSearch}
+                  onChange={(e) => setRoutinePickerSearch(e.target.value)}
+                  className="pl-8 h-9 bg-secondary/40 border-border/60 text-xs rounded-lg"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-none">
+                <Badge
+                  variant="secondary"
+                  className={`cursor-pointer text-[10px] py-0.5 px-2 ${
+                    !routinePickerMuscle ? "bg-purple-500/20 text-purple-400" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setRoutinePickerMuscle("")}
+                >
+                  All
+                </Badge>
+                {muscleGroups.map((m) => {
+                  const colors = muscleGroupColors[m];
+                  const isSelected = routinePickerMuscle === m;
+                  return (
+                    <Badge
+                      key={m}
+                      variant="secondary"
+                      className={`cursor-pointer text-[10px] py-0.5 px-2 ${
+                        isSelected ? `${colors.bg} ${colors.text}` : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setRoutinePickerMuscle(isSelected ? "" : m)}
+                    >
+                      {m}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {filteredRoutinePickerExercises.map((ex) => {
+                const pColors = muscleGroupColors[ex.primaryMuscle];
+                const isAdded = routineExerciseIds.includes(ex.id);
+                return (
+                  <button
+                    key={ex.id}
+                    onClick={() => {
+                      if (isAdded) {
+                        setRoutineExerciseIds((prev) => prev.filter((id) => id !== ex.id));
+                      } else {
+                        setRoutineExerciseIds((prev) => [...prev, ex.id]);
+                      }
+                    }}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${
+                      isAdded ? "bg-purple-500/15 border border-purple-500/30" : "hover:bg-secondary/70 border border-transparent"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
+                        isAdded ? "bg-purple-500/20" : "bg-secondary"
+                      }`}>
+                        {isAdded ? (
+                          <Check className="w-3.5 h-3.5 text-purple-400" />
+                        ) : (
+                          <Dumbbell className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div>
+                        <div className={`font-semibold text-xs ${ isAdded ? "text-purple-300" : "group-hover:text-blue-400" } transition-colors`}>{ex.name}</div>
+                        <div className={`text-[10px] ${pColors.text}`}>{ex.primaryMuscle}</div>
+                      </div>
+                    </div>
+                    <span className={`text-[10px] font-bold ${ isAdded ? "text-purple-400" : "text-blue-400 opacity-0 group-hover:opacity-100" } transition-opacity`}>
+                      {isAdded ? "✓ Added" : "+ Add"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="p-3 border-t border-border/60">
+              <Button
+                size="sm"
+                onClick={() => setRoutinePickerOpen(false)}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold"
+              >
+                Done ({routineExerciseIds.length} selected)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Routine Confirmation Modal ─────────────── */}
+      {deleteRoutineId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
+          <div className="relative w-full max-w-sm bg-card border border-destructive/40 rounded-2xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-destructive/15 text-destructive flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">Delete Routine?</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {savedRoutines.find((r) => r.id === deleteRoutineId)?.name}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              This will permanently remove the routine. Your logged workout history won't be affected.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setDeleteRoutineId(null)} className="flex-1 text-xs">
+                Cancel
+              </Button>
+              <Button size="sm" onClick={confirmDeleteRoutine} className="flex-1 bg-destructive hover:bg-destructive/90 text-white text-xs font-semibold">
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ---------------------------------------------------- */}
       {/* LOGGED WORKOUT SESSIONS (Date & Time + Delete Features) */}

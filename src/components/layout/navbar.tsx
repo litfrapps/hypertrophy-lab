@@ -15,9 +15,12 @@ import {
   X,
   LogIn,
   UserPlus,
+  Clock,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
+import { useSession } from "@/contexts/session-context";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -28,9 +31,29 @@ const navItems = [
   { href: "/ai", label: "AI Coach", icon: Bot },
 ];
 
+// Format elapsed seconds as MM:SS or HH:MM:SS
+function fmtTime(s: number) {
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const p = (n: number) => n.toString().padStart(2, "0");
+  return h > 0 ? `${p(h)}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`;
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const {
+    isActive,
+    elapsedSeconds,
+    exercises: sessionExercises,
+    liveVolume,
+    unit,
+  } = useSession();
+
+  // Only show the floating banner when a session is active and NOT on /log
+  const showSessionBanner = isActive && pathname !== "/log";
 
   return (
     <>
@@ -54,14 +77,14 @@ export function Navbar() {
         {/* Nav Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isNavActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                  isActive
+                  isNavActive
                     ? "bg-blue-500/10 text-blue-400 shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                 )}
@@ -69,17 +92,43 @@ export function Navbar() {
                 <item.icon
                   className={cn(
                     "w-5 h-5 transition-colors",
-                    isActive ? "text-blue-400" : "text-muted-foreground"
+                    isNavActive ? "text-blue-400" : "text-muted-foreground"
                   )}
                 />
                 {item.label}
-                {isActive && (
+                {isNavActive && (
                   <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
                 )}
               </Link>
             );
           })}
         </nav>
+
+        {/* Active Session Banner — Desktop Sidebar */}
+        {showSessionBanner && (
+          <div className="px-3 py-2 border-t border-emerald-500/20">
+            <Link href="/log" className="block">
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all group cursor-pointer">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="text-xs font-bold font-mono text-emerald-400">
+                      {fmtTime(elapsedSeconds)}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                    {sessionExercises.length}{" "}
+                    {sessionExercises.length === 1 ? "exercise" : "exercises"}
+                    {liveVolume > 0 &&
+                      ` · ${liveVolume.toLocaleString()} ${unit}`}
+                  </p>
+                </div>
+                <Zap className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* User Auth Section */}
         <div className="p-4 border-t border-border space-y-3">
@@ -163,7 +212,7 @@ export function Navbar() {
           <div className="lg:hidden fixed top-16 left-0 right-0 bottom-0 bg-card border-t border-border z-40 overflow-y-auto animate-fade-in-up">
             <nav className="p-4 space-y-1">
               {navItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isNavActive = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
@@ -171,7 +220,7 @@ export function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className={cn(
                       "flex items-center gap-3 px-4 py-3.5 rounded-lg text-base font-medium transition-all",
-                      isActive
+                      isNavActive
                         ? "bg-blue-500/10 text-blue-400"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                     )}
@@ -219,14 +268,14 @@ export function Navbar() {
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 border-t border-border glass z-50">
         <div className="flex items-center justify-around h-full px-1">
           {navItems.slice(0, 5).map((item) => {
-            const isActive = pathname === item.href;
+            const isNavActive = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all min-w-0",
-                  isActive
+                  isNavActive
                     ? "text-blue-400"
                     : "text-muted-foreground hover:text-foreground"
                 )}
@@ -235,7 +284,7 @@ export function Navbar() {
                 <span className="text-[10px] font-medium truncate">
                   {item.label}
                 </span>
-                {isActive && (
+                {isNavActive && (
                   <div className="absolute bottom-1 w-5 h-0.5 rounded-full bg-blue-400" />
                 )}
               </Link>
@@ -243,6 +292,40 @@ export function Navbar() {
           })}
         </div>
       </nav>
+
+      {/* Floating Active Session Banner — Mobile (sits just above bottom tab bar) */}
+      {showSessionBanner && (
+        <Link
+          href="/log"
+          className="lg:hidden fixed bottom-[68px] left-3 right-3 z-40"
+        >
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card/95 backdrop-blur-md border border-emerald-500/40 shadow-xl shadow-emerald-500/10 hover:border-emerald-500/60 transition-all animate-fade-in-up">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold font-mono text-emerald-400">
+                  {fmtTime(elapsedSeconds)}
+                </span>
+                <span className="text-[10px] text-muted-foreground truncate">
+                  ·{" "}
+                  {sessionExercises[0]?.exercise.name
+                    ? `${sessionExercises[0].exercise.name}${sessionExercises.length > 1 ? ` +${sessionExercises.length - 1}` : ""}`
+                    : `${sessionExercises.length} exercises`}
+                </span>
+              </div>
+              {liveVolume > 0 && (
+                <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                  {liveVolume.toLocaleString()} {unit} logged
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-emerald-400 text-[11px] font-bold shrink-0 bg-emerald-500/15 px-2 py-1 rounded-lg">
+              <Zap className="w-3 h-3" />
+              <span>Return</span>
+            </div>
+          </div>
+        </Link>
+      )}
     </>
   );
 }

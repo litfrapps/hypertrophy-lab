@@ -5,6 +5,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ClientProviders } from "@/components/layout/client-providers";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -36,13 +37,15 @@ export default function RootLayout({
       <body className="min-h-screen bg-background text-foreground antialiased">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <TooltipProvider>
-          <Navbar />
-          {/* Main content area — offset for desktop sidebar and mobile top bar */}
-          <main className="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-          {children}
-          </div>
-          </main>
+            <ClientProviders>
+              <Navbar />
+              {/* Main content area — offset for desktop sidebar and mobile top bar */}
+              <main className="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+                  {children}
+                </div>
+              </main>
+            </ClientProviders>
           </TooltipProvider>
         </ClerkProvider>
       </body>

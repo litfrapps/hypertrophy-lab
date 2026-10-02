@@ -330,6 +330,20 @@ export function useWorkouts() {
     [workouts]
   );
 
+  // Returns the most recent sets logged for an exercise (weight + reps per set)
+  const getLastEntryForExercise = useCallback(
+    (exerciseId: string): { weight: number; reps: number }[] | null => {
+      const entries = workouts
+        .filter((w) => w.exerciseId === exerciseId)
+        .sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+      if (entries.length === 0) return null;
+      return entries[0].sets.map((s) => ({ weight: s.weight, reps: s.reps }));
+    },
+    [workouts]
+  );
+
   const getProgressData = useCallback(
     (exerciseId: string) => {
       return getWorkoutsForExercise(exerciseId).map((w) => {
@@ -398,6 +412,7 @@ export function useWorkouts() {
     // Read helpers
     getWorkoutsForExercise,
     getRecentWorkouts,
+    getLastEntryForExercise,
     getProgressData,
     // Legacy stubs
     addWorkout,
