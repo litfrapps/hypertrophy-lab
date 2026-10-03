@@ -7,12 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   XAxis,
   YAxis,
@@ -28,24 +34,96 @@ import {
   Calendar,
   Dumbbell,
   Flame,
-  Plus,
   Trash2,
+  ChevronsUpDown,
 } from "lucide-react";
 import Link from "next/link";
 
+// ── SVG placeholder shown when exercise has no image or image fails to load ──
+function ExercisePlaceholder() {
+  return (
+    <svg
+      viewBox="0 0 36 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-full h-full"
+    >
+      <rect width="36" height="36" rx="6" fill="currentColor" opacity="0.08" />
+      <path
+        d="M9 18h2m14 0h2M11 18v-3a1 1 0 011-1h1m10 4v-3a1 1 0 00-1-1h-1M13 14h10v8H13V14z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.5"
+      />
+    </svg>
+  );
+}
+
+// ── Square 1:1 thumbnail with SVG fallback ──
+function ExerciseThumbnail({
+  src,
+  alt,
+  className = "",
+}: {
+  src?: string;
+  alt: string;
+  className?: string;
+}) {
+  const [errored, setErrored] = useState(false);
+
+  if (!src || errored) {
+    return (
+      <div
+        className={`w-9 h-9 rounded-md bg-muted flex items-center justify-center text-muted-foreground flex-shrink-0 ${className}`}
+      >
+        <ExercisePlaceholder />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`w-9 h-9 rounded-md overflow-hidden bg-muted flex-shrink-0 ${className}`}
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="w-9 h-9 object-cover"
+        onError={() => setErrored(true)}
+      />
+    </div>
+  );
+}
+
 export default function ProgressPage() {
   const { workouts, isLoaded, deleteWorkout } = useWorkouts();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  // Find unique exercises that have been logged
-  const loggedExerciseIds = useMemo(() => {
-    return Array.from(new Set(workouts.map((w) => w.exerciseId)));
+  // ── Derive lifetime set count per exercise from all workout logs ──
+  const lifetimeSetCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    for (const w of workouts) {
+      counts[w.exerciseId] = (counts[w.exerciseId] ?? 0) + w.sets.length;
+    }
+    return counts;
   }, [workouts]);
 
-  const defaultExerciseId = loggedExerciseIds[0] || "barbell-squat";
+  // ── Sort: most-logged first, zero-set exercises last, ties alphabetical ──
+  const sortedExercises = useMemo(() => {
+    return [...exercises].sort((a, b) => {
+      const ca = lifetimeSetCounts[a.id] ?? 0;
+      const cb = lifetimeSetCounts[b.id] ?? 0;
+      if (ca !== cb) return cb - ca;
+      return a.name.localeCompare(b.name);
+    });
+  }, [lifetimeSetCounts]);
+
+  const defaultExerciseId = sortedExercises[0]?.id ?? "barbell-squat";
   const [selectedExerciseId, setSelectedExerciseId] =
     useState<string>(defaultExerciseId);
 
-  // Sync if logged exercises change
   const currentExercise =
     exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
 
@@ -112,65 +190,108 @@ export default function ProgressPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <TrendingUp className="w-5 h-5 text-blue-400" />
-            <span className="text-xs uppercase tracking-widest text-blue-400 font-semibold">
-              Hypertrophy Overload Tracker
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Progressive Overload Graphs
-          </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Monitor mechanical load progression over time — the primary driver
-            of muscle hypertrophy.
-          </p>
+      {/* Header — Log Session button intentionally removed */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 mb-1">
+          <TrendingUp className="w-5 h-5 text-blue-400" />
+          <span className="text-xs uppercase tracking-widest text-blue-400 font-semibold">
+            Hypertrophy Overload Tracker
+          </span>
         </div>
-
-        <Link href={`/log?exercise=${selectedExerciseId}`}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
-            <Plus className="w-4 h-4 mr-1.5" /> Log Session
-          </Button>
-        </Link>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Progressive Overload Graphs
+        </h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Monitor mechanical load progression over time — the primary driver of
+          muscle hypertrophy.
+        </p>
       </div>
 
-      {/* Exercise Picker for Chart */}
+      {/* Exercise Picker — Popover + Command (mobile-optimized, searchable) */}
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-card p-4 rounded-xl border border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-400">
-            <Dumbbell className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">
-              Selected Exercise
-            </div>
-            <div className="font-semibold text-foreground text-base">
+        {/* Selected exercise preview */}
+        <div className="flex items-center gap-3 min-w-0">
+          <ExerciseThumbnail
+            src={currentExercise?.image}
+            alt={currentExercise?.name ?? "Exercise"}
+            className="!w-10 !h-10 rounded-lg"
+          />
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground">Selected Exercise</div>
+            <div className="font-semibold text-foreground text-base truncate">
               {currentExercise?.name}
             </div>
           </div>
         </div>
 
+        {/* Full-width searchable popover picker */}
         <div className="w-full sm:w-72">
-          <Select
-            value={selectedExerciseId}
-            onValueChange={(val) => {
-              if (val) setSelectedExerciseId(val);
-            }}
-          >
-            <SelectTrigger className="bg-secondary/50 border-border">
-              <SelectValue placeholder="Choose an exercise..." />
-            </SelectTrigger>
-            <SelectContent className="max-h-80 bg-card border-border">
-              {exercises.map((ex) => (
-                <SelectItem key={ex.id} value={ex.id}>
-                  {ex.name} ({ex.primaryMuscle})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger
+              className="flex w-full items-center justify-between rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-blue-500/40 transition-colors"
+              aria-label="Select exercise"
+            >
+              <span className="truncate">
+                {currentExercise?.name ?? "Choose an exercise…"}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" />
+            </PopoverTrigger>
+            <PopoverContent
+              className="p-0 w-[var(--anchor-width)] min-w-[280px]"
+              align="start"
+              side="bottom"
+              sideOffset={6}
+            >
+              <Command>
+                <div className="sticky top-0 z-10 bg-popover rounded-t-xl">
+                  <CommandInput placeholder="Search exercises…" autoFocus />
+                </div>
+                <CommandList className="max-h-72">
+                  <CommandEmpty className="py-4 text-center text-sm text-muted-foreground">
+                    No exercises found.
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {sortedExercises.map((ex) => {
+                      const sets = lifetimeSetCounts[ex.id] ?? 0;
+                      const isZero = sets === 0;
+                      const isSelected = ex.id === selectedExerciseId;
+                      return (
+                        <CommandItem
+                          key={ex.id}
+                          value={ex.name}
+                          data-checked={isSelected}
+                          onSelect={() => {
+                            setSelectedExerciseId(ex.id);
+                            setPickerOpen(false);
+                          }}
+                          className={isZero ? "opacity-50" : ""}
+                        >
+                          {/* 1:1 thumbnail */}
+                          <ExerciseThumbnail src={ex.image} alt={ex.name} />
+
+                          {/* Exercise name (no muscle group parenthetical) */}
+                          <span
+                            className={`flex-1 truncate ${
+                              isZero
+                                ? "text-muted-foreground/50"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {ex.name}
+                          </span>
+
+                          {/* Lifetime sets count */}
+                          <span className="ml-auto shrink-0 text-xs text-muted-foreground font-normal tabular-nums">
+                            {sets} {sets === 1 ? "set" : "sets"}
+                          </span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

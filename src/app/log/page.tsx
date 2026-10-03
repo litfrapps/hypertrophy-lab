@@ -316,11 +316,11 @@ function WorkoutSessionManager() {
           completed: false,
         }));
       }
-      // Default 3 sets
+      // Default 3 sets — 0 weight/reps when no prior history exists
       return [
-        { setNumber: 1, reps: 8, weight: 60, completed: false },
-        { setNumber: 2, reps: 8, weight: 60, completed: false },
-        { setNumber: 3, reps: 8, weight: 60, completed: false },
+        { setNumber: 1, reps: 0, weight: 0, completed: false },
+        { setNumber: 2, reps: 0, weight: 0, completed: false },
+        { setNumber: 3, reps: 0, weight: 0, completed: false },
       ];
     },
     [getLastEntryForExercise]
@@ -381,8 +381,8 @@ function WorkoutSessionManager() {
           const lastSet = item.sets[item.sets.length - 1];
           const newSet: SessionExerciseSet = {
             setNumber: item.sets.length + 1,
-            reps: lastSet ? lastSet.reps : 8,
-            weight: lastSet ? lastSet.weight : 60,
+            reps: lastSet ? lastSet.reps : 0,
+            weight: lastSet ? lastSet.weight : 0,
             completed: false,
           };
           return { ...item, sets: [...item.sets, newSet] };
@@ -709,25 +709,26 @@ function WorkoutSessionManager() {
 
     return (
       <div className="space-y-3.5 max-w-3xl mx-auto pb-24 px-1 sm:px-0">
-        {/* Compact Sticky Session Bar */}
-        <div className="sticky top-16 lg:top-0 z-30 -mx-4 sm:-mx-6 lg:-mx-8 px-3.5 sm:px-6 py-2 bg-card/95 backdrop-blur-md border-b border-border/60 shadow-md">
-          <div className="flex flex-wrap items-center justify-between gap-2 max-w-3xl mx-auto">
-            {/* Live Clock & Date Adjuster */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold text-sm">
+        {/* Top Session Control Bar - Static Scrolling Layout */}
+        <div className="w-full bg-card border border-border/70 rounded-xl shadow-sm p-2.5 sm:p-3">
+          <div className="w-full space-y-2.5">
+            {/* Row 1 (Timer & Date Picker) */}
+            <div className="flex items-center justify-between w-full">
+              {/* Left side: Active session timer badge */}
+              <div className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 font-mono font-bold text-sm">
                 <Clock className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                 <span>{formatSessionTime(sessionElapsedSeconds)}</span>
               </div>
 
-              {/* Adjust Session Date & Time Button */}
+              {/* Right side: Date picker button */}
               <button
                 type="button"
                 onClick={openActiveDateModal}
-                className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/70 hover:bg-secondary border border-border/50 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-secondary/70 hover:bg-secondary border border-border/50 text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
                 title="Adjust session date & time"
               >
-                <Calendar className="w-3 h-3 text-cyan-400" />
-                <span className="truncate max-w-[130px] sm:max-w-none">
+                <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span>
                   {new Date(sessionDate).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
@@ -735,52 +736,57 @@ function WorkoutSessionManager() {
                     minute: "2-digit",
                   })}
                 </span>
-                <Edit2 className="w-2.5 h-2.5 opacity-60 ml-0.5" />
+                <Edit2 className="w-2.5 h-2.5 opacity-60 ml-0.5 shrink-0" />
               </button>
             </div>
 
-            {/* Right Controls: Unit & Finish */}
-            <div className="flex items-center gap-2">
-              <div className="flex bg-secondary rounded-md p-0.5 text-[11px]">
+            {/* Row 2 (Unit Toggle & Finish Actions) */}
+            <div className="flex items-center justify-between w-full">
+              {/* Left side: Weight unit toggle switch */}
+              <div className="flex bg-secondary rounded-lg p-0.5 text-[11px] h-9 items-center border border-border/40">
                 <button
                   type="button"
                   onClick={() => setUnit("kg")}
-                  className={`px-2 py-0.5 rounded font-medium transition-all ${unit === "kg"
-                    ? "bg-blue-600 text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
+                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${
+                    unit === "kg"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   kg
                 </button>
                 <button
                   type="button"
                   onClick={() => setUnit("lbs")}
-                  className={`px-2 py-0.5 rounded font-medium transition-all ${unit === "lbs"
-                    ? "bg-blue-600 text-white"
-                    : "text-muted-foreground hover:text-foreground"
-                    }`}
+                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${
+                    unit === "lbs"
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
                   lbs
                 </button>
               </div>
 
-              <Button
-                onClick={finishSession}
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-7.5 px-3 rounded-lg shadow-sm"
-              >
-                <Check className="w-3.5 h-3.5 mr-1" /> Finish
-              </Button>
+              {/* Right side: Grouped action buttons (Cancel + Finish) */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCancelConfirmOpen(true)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg border border-border/50 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 transition-colors"
+                  title="Cancel workout — discard all sets"
+                >
+                  <Ban className="w-4 h-4" />
+                </button>
 
-              {/* Cancel Workout Button */}
-              <button
-                type="button"
-                onClick={() => setCancelConfirmOpen(true)}
-                className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
-                title="Cancel workout — discard all sets"
-              >
-                <Ban className="w-4 h-4" />
-              </button>
+                <Button
+                  onClick={finishSession}
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-9 px-3 rounded-lg shadow-sm whitespace-nowrap"
+                >
+                  <Check className="w-3.5 h-3.5 mr-1" /> Finish
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -940,22 +946,13 @@ function WorkoutSessionManager() {
                               placeholder="0"
                               className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
                             />
-                            {(() => {
-                              const last = getLastEntryForExercise(item.exercise.id);
-                              const prev = last?.[setIdx]?.weight;
-                              return prev !== undefined ? (
-                                <span className="text-[9px] text-center text-muted-foreground/50 leading-none">
-                                  prev: {prev}
-                                </span>
-                              ) : null;
-                            })()}
                           </div>
 
                           {/* Reps input */}
                           <div className="flex flex-col gap-0.5">
                             <Input
                               type="number"
-                              min={1}
+                              min={0}
                               value={set.reps || ""}
                               onChange={(e) =>
                                 updateSetValues(
@@ -965,18 +962,9 @@ function WorkoutSessionManager() {
                                   parseInt(e.target.value) || 0
                                 )
                               }
-                              placeholder="8"
+                              placeholder="0"
                               className="bg-secondary/40 border-border/60 h-8 text-center font-bold text-xs rounded-md px-1"
                             />
-                            {(() => {
-                              const last = getLastEntryForExercise(item.exercise.id);
-                              const prev = last?.[setIdx]?.reps;
-                              return prev !== undefined ? (
-                                <span className="text-[9px] text-center text-muted-foreground/50 leading-none">
-                                  prev: {prev}
-                                </span>
-                              ) : null;
-                            })()}
                           </div>
 
                           {/* Checkmark Button */}
@@ -1035,14 +1023,14 @@ function WorkoutSessionManager() {
               <Button
                 onClick={() => setPickerOpen(true)}
                 variant="outline"
-                className="flex-1 h-11 border-blue-500/30 text-blue-400 hover:bg-blue-600/10 font-semibold text-xs sm:text-sm rounded-xl"
+                className="flex-1 h-12 py-3 border-blue-500/30 text-blue-400 hover:bg-blue-600/10 font-semibold text-xs sm:text-sm rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Add Exercise
               </Button>
 
               <Button
                 onClick={finishSession}
-                className="flex-1 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-md"
+                className="flex-1 h-12 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm rounded-xl shadow-md"
               >
                 <Check className="w-4 h-4 mr-1.5" /> Finish Workout ({formatSessionTime(sessionElapsedSeconds)})
               </Button>
@@ -1050,7 +1038,7 @@ function WorkoutSessionManager() {
               <Button
                 onClick={() => setCancelConfirmOpen(true)}
                 variant="outline"
-                className="h-11 border-destructive/40 text-destructive hover:bg-destructive/10 font-semibold text-xs sm:text-sm rounded-xl"
+                className="h-12 py-3 border-destructive/40 text-destructive hover:bg-destructive/10 font-semibold text-xs sm:text-sm rounded-xl"
               >
                 <Ban className="w-4 h-4 mr-1.5" /> Cancel
               </Button>

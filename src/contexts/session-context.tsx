@@ -88,9 +88,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           timerActive: false,
           timerKey: 0,
           sets: [
-            { setNumber: 1, reps: 8, weight: 60, completed: false },
-            { setNumber: 2, reps: 8, weight: 60, completed: false },
-            { setNumber: 3, reps: 8, weight: 60, completed: false },
+            { setNumber: 1, reps: 0, weight: 0, completed: false },
+            { setNumber: 2, reps: 0, weight: 0, completed: false },
+            { setNumber: 3, reps: 0, weight: 0, completed: false },
           ],
         }))
       );
