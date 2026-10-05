@@ -288,6 +288,31 @@ export function useWorkouts() {
   }, []);
 
   // ──────────────────────────────────────────
+  // Delete an entire session (+ all its logs)
+  // ──────────────────────────────────────────
+  const deleteSession = useCallback(async (sessionId: string) => {
+    // 1. Remove from state and localStorage immediately
+    setSessions((prev) => {
+      const updated = prev.filter((s) => s.id !== sessionId);
+      saveLocalSessions(updated);
+      return updated;
+    });
+
+    // 2. Try to sync deletion to server
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`, {
+        method: "DELETE",
+      });
+      if (res.status === 503) return; // unconfigured
+      if (!res.ok && res.status !== 404) {
+        console.warn(`[useWorkouts] Server deleteSession returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.warn("[useWorkouts] Could not sync deleteSession to server (offline):", err);
+    }
+  }, []);
+
+  // ──────────────────────────────────────────
   // Update an entire session's logs (inline editing)
   // ──────────────────────────────────────────
   const updateSession = useCallback(async (updatedSession: WorkoutSession) => {
@@ -317,32 +342,7 @@ export function useWorkouts() {
     } catch (err) {
       console.warn("[useWorkouts] Could not sync updateSession to server (offline):", err);
     }
-  }, []);
-
-  // ──────────────────────────────────────────
-  // Delete an entire session (+ all its logs)
-  // ──────────────────────────────────────────
-  const deleteSession = useCallback(async (sessionId: string) => {
-    // 1. Remove from state and localStorage immediately
-    setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== sessionId);
-      saveLocalSessions(updated);
-      return updated;
-    });
-
-    // 2. Try to sync deletion to server
-    try {
-      const res = await fetch(`/api/sessions/${sessionId}`, {
-        method: "DELETE",
-      });
-      if (res.status === 503) return; // unconfigured
-      if (!res.ok && res.status !== 404) {
-        console.warn(`[useWorkouts] Server deleteSession returned HTTP ${res.status}`);
-      }
-    } catch (err) {
-      console.warn("[useWorkouts] Could not sync deleteSession to server (offline):", err);
-    }
-  }, []);
+  }, [deleteSession]);
 
   // ──────────────────────────────────────────
   // Update date/time for a session
