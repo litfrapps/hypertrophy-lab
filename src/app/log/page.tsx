@@ -60,6 +60,8 @@ import Link from "next/link";
 // Local types only used inside the active session (sets extended with completion state)
 interface SessionExerciseSet extends WorkoutSet {
   completed: boolean;
+  isDone?: boolean;
+  isCompleted?: boolean;
 }
 
 interface SessionExerciseItem {
@@ -765,13 +767,29 @@ function WorkoutSessionManager() {
 
   // Finish session & save complete session entity
   const finishSession = () => {
-    // 1. Empty Session Guard: Check if ANY sets are marked as completed/done across all exercises
-    const totalDoneSetsAcrossAll = sessionExercises.reduce(
-      (sum, item) => sum + item.sets.filter((s) => s.completed).length,
+    // 1. Valid Set Criteria & Submission Filtering:
+    // A valid completed set meets ALL three conditions:
+    //  1. `isDone` (or `completed` / `isCompleted`) === true
+    //  2. `weight` > 0
+    //  3. `reps` > 0
+    const isValidCompletedSet = (s: SessionExerciseSet): boolean => {
+      const isDone = Boolean(s.completed || s.isDone || s.isCompleted);
+      const weight = Number(s.weight);
+      const reps = Number(s.reps);
+      return isDone && !isNaN(weight) && weight > 0 && !isNaN(reps) && reps > 0;
+    };
+
+    // 2. Block Submissions with 0 Valid Sets:
+    // If filtering yields 0 total valid sets across all exercises (e.g., no sets were marked done,
+    // or sets were marked done but had 0/empty weight or 0/empty reps), prevent the session from finishing.
+    // Trigger the modal popup alert notifying the user ("You have not logged any exercises yet")
+    // with an 'X' close icon on the top-right corner.
+    const totalValidSetsAcrossAll = sessionExercises.reduce(
+      (sum, item) => sum + item.sets.filter(isValidCompletedSet).length,
       0
     );
 
-    if (totalDoneSetsAcrossAll === 0) {
+    if (totalValidSetsAcrossAll === 0) {
       setEmptySessionAlertOpen(true);
       return;
     }
@@ -785,39 +803,43 @@ function WorkoutSessionManager() {
 
     const finalSessionDateISO = sessionDate || new Date().toISOString();
 
-    // 2. Strict Done Set Filtering: filter out and discard all sets that were NOT explicitly marked done
+    // 3. Discard Invalid / Unfilled Sets on Finish:
+    // If 1 or more valid sets exist in the session, automatically scrub and discard:
+    //  * Any sets that were NOT marked done.
+    //  * Any sets marked done that have 0 or empty weight or reps.
+    // Pass only the valid sets (>0 weight AND >0 reps marked as done) when committing the finished session record.
     sessionExercises.forEach((item) => {
-      const finishedSets = item.sets.filter((s) => s.completed);
+      const validSets = item.sets.filter(isValidCompletedSet);
 
-      // Only log exercises that have at least 1 set marked done
-      if (finishedSets.length > 0) {
+      // Only log exercises that have at least 1 valid completed set
+      if (validSets.length > 0) {
         const log: WorkoutLog = {
           id: crypto.randomUUID(),
           sessionId: sessionId,
           date: finalSessionDateISO,
           exerciseId: item.exercise.id,
           exerciseName: item.exercise.name,
-          sets: finishedSets.map((s, idx) => ({
+          sets: validSets.map((s, idx) => ({
             setNumber: idx + 1,
-            reps: s.reps,
-            weight: s.weight,
+            reps: Number(s.reps),
+            weight: Number(s.weight),
             unit: unit,
           })),
           unit: unit,
         };
 
         completedLogs.push(log);
-        totalCompletedSets += finishedSets.length;
-        const exVolume = finishedSets.reduce(
-          (sum, s) => sum + s.reps * s.weight,
+        totalCompletedSets += validSets.length;
+        const exVolume = validSets.reduce(
+          (sum, s) => sum + Number(s.reps) * Number(s.weight),
           0
         );
         totalVolumeLifted += exVolume;
-        const maxWt = Math.max(...finishedSets.map((s) => s.weight));
+        const maxWt = Math.max(...validSets.map((s) => Number(s.weight)));
 
         summaryList.push({
           name: item.exercise.name,
-          setsCount: finishedSets.length,
+          setsCount: validSets.length,
           maxWeight: maxWt,
         });
       }
