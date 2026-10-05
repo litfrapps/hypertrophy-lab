@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { exercises } from "@/lib/exercises";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,18 +98,20 @@ function ExerciseThumbnail({
   );
 }
 
-export default function ProgressPage() {
-  const { workouts, isLoaded, deleteWorkout } = useWorkouts();
+function ProgressContent() {
+  const {
+    workouts,
+    isLoaded,
+    deleteWorkout,
+    lifetimeSetCounts,
+    topExerciseId,
+    globalUnit,
+    convertWeight,
+  } = useWorkouts();
+  const searchParams = useSearchParams();
+  const exerciseParam = searchParams.get("exercise");
   const [pickerOpen, setPickerOpen] = useState(false);
-
-  // ── Derive lifetime set count per exercise from all workout logs ──
-  const lifetimeSetCounts = useMemo<Record<string, number>>(() => {
-    const counts: Record<string, number> = {};
-    for (const w of workouts) {
-      counts[w.exerciseId] = (counts[w.exerciseId] ?? 0) + w.sets.length;
-    }
-    return counts;
-  }, [workouts]);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string>("barbell-squat");
 
   // ── Sort: most-logged first, zero-set exercises last, ties alphabetical ──
   const sortedExercises = useMemo(() => {
@@ -120,9 +123,29 @@ export default function ProgressPage() {
     });
   }, [lifetimeSetCounts]);
 
-  const defaultExerciseId = sortedExercises[0]?.id ?? "barbell-squat";
-  const [selectedExerciseId, setSelectedExerciseId] =
-    useState<string>(defaultExerciseId);
+  // Parse exercise from URL search param on load; fall back to topExerciseId
+  useEffect(() => {
+    if (exerciseParam) {
+      const normalized = exerciseParam.trim().toLowerCase();
+      const match = exercises.find(
+        (e) =>
+          e.name.toLowerCase() === normalized ||
+          e.id.toLowerCase() === normalized ||
+          e.name.toLowerCase().replace(/[^a-z0-9]/g, "") ===
+            normalized.replace(/[^a-z0-9]/g, "") ||
+          e.name.toLowerCase().includes(normalized) ||
+          normalized.includes(e.name.toLowerCase())
+      );
+      if (match) {
+        setSelectedExerciseId(match.id);
+        return;
+      }
+    }
+
+    if (!exerciseParam && topExerciseId) {
+      setSelectedExerciseId(topExerciseId);
+    }
+  }, [exerciseParam, topExerciseId]);
 
   const currentExercise =
     exercises.find((e) => e.id === selectedExerciseId) || exercises[0];
@@ -135,13 +158,24 @@ export default function ProgressPage() {
 
     if (exerciseLogs.length > 0) {
       const data = exerciseLogs.map((log) => {
-        const topSetWeight = Math.max(...log.sets.map((s) => s.weight));
-        const totalVolume = log.sets.reduce(
-          (sum, s) => sum + s.reps * s.weight,
+        const convertedSets = log.sets.map((s) => ({
+          ...s,
+          convertedWeight: convertWeight(
+            s.weight,
+            s.unit || log.unit || "kg",
+            globalUnit
+          ),
+        }));
+        const topSetWeight =
+          convertedSets.length > 0
+            ? Math.max(...convertedSets.map((s) => s.convertedWeight))
+            : 0;
+        const totalVolume = convertedSets.reduce(
+          (sum, s) => sum + s.reps * s.convertedWeight,
           0
         );
         const topSetReps =
-          log.sets.find((s) => s.weight === topSetWeight)?.reps || 8;
+          convertedSets.find((s) => s.convertedWeight === topSetWeight)?.reps || 8;
         const d = new Date(log.date);
         return {
           date: d.toLocaleDateString("en-US", {
@@ -150,7 +184,7 @@ export default function ProgressPage() {
           }),
           fullDate: log.date.split("T")[0],
           weight: topSetWeight,
-          volume: totalVolume,
+          volume: Math.round(totalVolume),
           topSet: topSetWeight,
           reps: topSetReps,
           setsCount: log.sets.length,
@@ -161,7 +195,7 @@ export default function ProgressPage() {
     }
 
     return { chartData: [], logsList: [] };
-  }, [workouts, selectedExerciseId]);
+  }, [workouts, selectedExerciseId, globalUnit, convertWeight]);
 
   // High score stats
   const prWeight =
@@ -169,7 +203,10 @@ export default function ProgressPage() {
   const firstWeight = chartData.length > 0 ? chartData[0].weight : 0;
   const latestWeight =
     chartData.length > 0 ? chartData[chartData.length - 1].weight : 0;
-  const weightGain = chartData.length > 1 ? latestWeight - firstWeight : 0;
+  const weightGain =
+    chartData.length > 1
+      ? Math.round((latestWeight - firstWeight) * 10) / 10
+      : 0;
   const percentageGain =
     firstWeight > 0
       ? Math.round(((latestWeight - firstWeight) / firstWeight) * 100)
@@ -271,11 +308,10 @@ export default function ProgressPage() {
 
                           {/* Exercise name (no muscle group parenthetical) */}
                           <span
-                            className={`flex-1 truncate ${
-                              isZero
+                            className={`flex-1 truncate ${isZero
                                 ? "text-muted-foreground/50"
                                 : "text-foreground"
-                            }`}
+                              }`}
                           >
                             {ex.name}
                           </span>
@@ -306,7 +342,7 @@ export default function ProgressPage() {
             <div className="text-2xl font-bold font-mono">
               {prWeight}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                kg
+                {globalUnit}
               </span>
             </div>
             <div className="text-[11px] text-green-400 mt-1 flex items-center gap-0.5">
@@ -324,7 +360,7 @@ export default function ProgressPage() {
             <div className="text-2xl font-bold font-mono">
               {latestWeight}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                kg
+                {globalUnit}
               </span>
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
@@ -342,9 +378,9 @@ export default function ProgressPage() {
               <TrendingUp className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="text-2xl font-bold font-mono text-emerald-400">
-              +{weightGain}{" "}
+              {weightGain >= 0 ? `+${weightGain}` : weightGain}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                kg
+                {globalUnit}
               </span>
             </div>
             <div className="text-[11px] text-muted-foreground mt-1">
@@ -382,7 +418,7 @@ export default function ProgressPage() {
               variant="secondary"
               className="bg-blue-500/10 text-blue-400 border-0 font-mono text-xs"
             >
-              Load (kg) vs Time
+              Load ({globalUnit}) vs Time
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -446,9 +482,9 @@ export default function ProgressPage() {
                     labelStyle={{ color: "#94a3b8", fontWeight: 600 }}
                     formatter={(value: any, name: any) => {
                       if (name === "weight")
-                        return [`${value} kg`, "Top Set Load"];
+                        return [`${value} ${globalUnit}`, "Top Set Load"];
                       if (name === "volume")
-                        return [`${value} kg`, "Session Volume"];
+                        return [`${Number(value).toLocaleString()} ${globalUnit}`, "Session Volume"];
                       return [value, name];
                     }}
                   />
@@ -510,7 +546,7 @@ export default function ProgressPage() {
                       </div>
                       <div>
                         <div className="font-semibold text-sm">
-                          {item.weight} kg{" "}
+                          {item.weight} {globalUnit}{" "}
                           <span className="text-xs text-muted-foreground font-normal">
                             × {item.reps} reps
                           </span>
@@ -524,7 +560,7 @@ export default function ProgressPage() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className="text-xs font-mono font-semibold text-foreground">
-                          {item.volume.toLocaleString()} kg
+                          {item.volume.toLocaleString()} {globalUnit}
                         </div>
                         <div className="text-[10px] text-muted-foreground">
                           Total Volume
@@ -549,5 +585,19 @@ export default function ProgressPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ProgressPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-20 text-center text-sm text-muted-foreground">
+          Loading progress tracker...
+        </div>
+      }
+    >
+      <ProgressContent />
+    </Suspense>
   );
 }

@@ -33,6 +33,7 @@ export interface WorkoutSet {
   setNumber: number;
   reps: number;
   weight: number;
+  unit?: "kg" | "lbs";
 }
 
 export interface WorkoutLog {

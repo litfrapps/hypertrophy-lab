@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { Exercise, WorkoutSet } from "@/types";
+import { useUnit, UNIT_STORAGE_KEY } from "@/contexts/unit-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,9 +56,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [sessionDate, setSessionDate] = useState(new Date().toISOString());
-  const [unit, setUnit] = useState<"kg" | "lbs">("kg");
+  const { globalUnit, setGlobalUnit } = useUnit();
+  const unit = globalUnit;
   const [exercises, setExercises] = useState<SessionExerciseItem[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const setUnit = useCallback(
+    (newUnit: "kg" | "lbs") => {
+      setGlobalUnit(newUnit);
+    },
+    [setGlobalUnit]
+  );
 
   useEffect(() => {
     if (isActive && startTime) {

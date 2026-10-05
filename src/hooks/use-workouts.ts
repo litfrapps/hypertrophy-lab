@@ -12,6 +12,44 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { WorkoutLog, WorkoutSession } from "@/types";
 
+// ──────────────────────────────────────────
+// E1RM Utility — Epley Formula
+// E1RM = Weight × (1 + Reps / 30)
+// ──────────────────────────────────────────
+import {
+  useUnit,
+  convertWeight,
+  formatWeight,
+  UNIT_STORAGE_KEY,
+  KG_TO_LBS,
+  LBS_TO_KG,
+  type WeightUnit,
+} from "@/contexts/unit-context";
+
+export {
+  useUnit,
+  convertWeight,
+  formatWeight,
+  UNIT_STORAGE_KEY,
+  KG_TO_LBS,
+  LBS_TO_KG,
+  type WeightUnit,
+};
+
+export function calculateE1RM(weight: number, reps: number): number {
+  if (weight <= 0 || reps <= 0) return 0;
+  if (reps === 1) return weight;
+  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+}
+
+export function getLogE1RM(log: WorkoutLog): number {
+  if (!log.sets || log.sets.length === 0) return 0;
+  const topSet = log.sets.reduce((best, s) =>
+    s.weight > best.weight ? s : best
+  , log.sets[0]);
+  return calculateE1RM(topSet.weight, topSet.reps);
+}
+
 const STORAGE_KEY = "hypertrophy-lab-sessions";
 const LEGACY_STORAGE_KEY = "hypertrophy-lab-workouts";
 
@@ -66,6 +104,13 @@ function saveLocalSessions(sessions: WorkoutSession[]) {
 
 export function useWorkouts() {
   const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
+  const {
+    globalUnit,
+    setGlobalUnit,
+    toggleGlobalUnit,
+    convertWeight: unitConvertWeight,
+    formatWeight: unitFormatWeight,
+  } = useUnit();
 
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -175,6 +220,32 @@ export function useWorkouts() {
   }, [sessions]);
 
   // ──────────────────────────────────────────
+  // Derived: lifetime set counts per exercise
+  // ──────────────────────────────────────────
+  const lifetimeSetCounts = useMemo<Record<string, number>>(() => {
+    const counts: Record<string, number> = {};
+    for (const w of workouts) {
+      counts[w.exerciseId] = (counts[w.exerciseId] ?? 0) + w.sets.length;
+    }
+    return counts;
+  }, [workouts]);
+
+  // ──────────────────────────────────────────
+  // Derived: exercise with highest lifetime set count
+  // ──────────────────────────────────────────
+  const topExerciseId = useMemo<string | null>(() => {
+    let topId: string | null = null;
+    let topCount = 0;
+    for (const [id, count] of Object.entries(lifetimeSetCounts)) {
+      if (count > topCount) {
+        topCount = count;
+        topId = id;
+      }
+    }
+    return topId;
+  }, [lifetimeSetCounts]);
+
+  // ──────────────────────────────────────────
   // Add a complete workout session
   // ──────────────────────────────────────────
   const addSession = useCallback(async (newSession: WorkoutSession) => {
@@ -217,6 +288,38 @@ export function useWorkouts() {
   }, []);
 
   // ──────────────────────────────────────────
+  // Update an entire session's logs (inline editing)
+  // ──────────────────────────────────────────
+  const updateSession = useCallback(async (updatedSession: WorkoutSession) => {
+    if (!updatedSession.logs || updatedSession.logs.length === 0) {
+      await deleteSession(updatedSession.id);
+      return;
+    }
+
+    setSessions((prev) => {
+      const updated = prev.map((s) =>
+        s.id === updatedSession.id ? updatedSession : s
+      );
+      saveLocalSessions(updated);
+      return updated;
+    });
+
+    try {
+      const res = await fetch(`/api/sessions/${updatedSession.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedSession),
+      });
+      if (res.status === 503) return;
+      if (!res.ok) {
+        console.warn(`[useWorkouts] Server updateSession returned HTTP ${res.status}`);
+      }
+    } catch (err) {
+      console.warn("[useWorkouts] Could not sync updateSession to server (offline):", err);
+    }
+  }, []);
+
+  // ──────────────────────────────────────────
   // Delete an entire session (+ all its logs)
   // ──────────────────────────────────────────
   const deleteSession = useCallback(async (sessionId: string) => {
@@ -251,10 +354,10 @@ export function useWorkouts() {
         const updated = prev.map((s) =>
           s.id === sessionId
             ? {
-                ...s,
-                date: newDateISO,
-                logs: s.logs.map((l) => ({ ...l, date: newDateISO })),
-              }
+              ...s,
+              date: newDateISO,
+              logs: s.logs.map((l) => ({ ...l, date: newDateISO })),
+            }
             : s
         );
         saveLocalSessions(updated);
@@ -330,16 +433,21 @@ export function useWorkouts() {
     [workouts]
   );
 
-  // Returns the most recent sets logged for an exercise (weight + reps per set)
+  // Returns the most recent sets logged for an exercise (weight + reps + logged unit per set)
   const getLastEntryForExercise = useCallback(
-    (exerciseId: string): { weight: number; reps: number }[] | null => {
+    (exerciseId: string): { weight: number; reps: number; unit?: "kg" | "lbs" }[] | null => {
       const entries = workouts
         .filter((w) => w.exerciseId === exerciseId)
         .sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
       if (entries.length === 0) return null;
-      return entries[0].sets.map((s) => ({ weight: s.weight, reps: s.reps }));
+      const lastLog = entries[0];
+      return lastLog.sets.map((s) => ({
+        weight: s.weight,
+        reps: s.reps,
+        unit: s.unit || lastLog.unit || "kg",
+      }));
     },
     [workouts]
   );
@@ -347,9 +455,13 @@ export function useWorkouts() {
   const getProgressData = useCallback(
     (exerciseId: string) => {
       return getWorkoutsForExercise(exerciseId).map((w) => {
-        const maxWeight = Math.max(...w.sets.map((s) => s.weight));
-        const totalVolume = w.sets.reduce(
-          (sum, s) => sum + s.reps * s.weight,
+        const convertedSets = w.sets.map((s) => ({
+          ...s,
+          convertedWeight: unitConvertWeight(s.weight, s.unit || w.unit || "kg", globalUnit),
+        }));
+        const maxWeight = Math.max(...convertedSets.map((s) => s.convertedWeight));
+        const totalVolume = convertedSets.reduce(
+          (sum, s) => sum + s.reps * s.convertedWeight,
           0
         );
         return {
@@ -360,7 +472,7 @@ export function useWorkouts() {
         };
       });
     },
-    [getWorkoutsForExercise]
+    [getWorkoutsForExercise, unitConvertWeight, globalUnit]
   );
 
   // Sorted sessions (newest first)
@@ -404,8 +516,18 @@ export function useWorkouts() {
     isLoaded,
     isSaving,
     isOffline,
+    // Global unit system
+    globalUnit,
+    setGlobalUnit,
+    toggleGlobalUnit,
+    convertWeight: unitConvertWeight,
+    formatWeight: unitFormatWeight,
+    // Derived helpers
+    lifetimeSetCounts,
+    topExerciseId,
     // Write operations
     addSession,
+    updateSession,
     deleteSession,
     updateSessionDateTime,
     deleteWorkout,

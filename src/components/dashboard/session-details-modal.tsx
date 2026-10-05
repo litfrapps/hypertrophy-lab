@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { WorkoutSession, WorkoutLog } from "@/types";
 import { exercises, muscleGroupColors } from "@/lib/exercises";
+import { useUnit } from "@/contexts/unit-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +46,8 @@ export function SessionDetailsModal({
   onClose,
   allWorkouts,
 }: SessionDetailsModalProps) {
+  const { globalUnit, convertWeight } = useUnit();
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,7 +75,10 @@ export function SessionDetailsModal({
     (sum, log) =>
       sum +
       (log.sets?.reduce(
-        (setSum, s) => setSum + (s.reps || 0) * (s.weight || 0),
+        (setSum, s) =>
+          setSum +
+          (s.reps || 0) *
+            convertWeight(s.weight || 0, s.unit || log.unit || "kg", globalUnit),
         0
       ) || 0),
     0
@@ -82,18 +88,18 @@ export function SessionDetailsModal({
   const sessionDateObj = new Date(session.date);
   const formattedFullDate = !isNaN(sessionDateObj.getTime())
     ? sessionDateObj.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
     : session.date;
 
   const formattedTime = !isNaN(sessionDateObj.getTime())
     ? sessionDateObj.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })
+      hour: "numeric",
+      minute: "2-digit",
+    })
     : null;
 
   const durationText = session.durationSeconds
@@ -182,9 +188,9 @@ export function SessionDetailsModal({
                 <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
               </div>
               <div className="text-xl font-bold font-mono text-purple-400">
-                {totalVolume.toLocaleString()}
+                {Math.round(totalVolume).toLocaleString()}
                 <span className="text-xs font-normal text-muted-foreground ml-1">
-                  kg
+                  {globalUnit}
                 </span>
               </div>
               <div className="text-[11px] text-muted-foreground">reps × load</div>
@@ -200,7 +206,7 @@ export function SessionDetailsModal({
                   ? Math.round(totalVolume / totalExercises).toLocaleString()
                   : 0}
                 <span className="text-xs font-normal text-muted-foreground ml-1">
-                  kg
+                  {globalUnit}
                 </span>
               </div>
               <div className="text-[11px] text-muted-foreground">per exercise</div>
@@ -289,6 +295,7 @@ function ExerciseDetailCard({
   allWorkouts: WorkoutLog[];
   index: number;
 }) {
+  const { globalUnit, convertWeight } = useUnit();
   const [metric, setMetric] = useState<"weight" | "volume">("weight");
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -296,25 +303,30 @@ function ExerciseDetailCard({
   const exerciseMeta = exercises.find((e) => e.id === log.exerciseId);
   const primaryColors = exerciseMeta
     ? muscleGroupColors[exerciseMeta.primaryMuscle] || {
-        bg: "bg-blue-500/10",
-        text: "text-blue-400",
-      }
+      bg: "bg-blue-500/10",
+      text: "text-blue-400",
+    }
     : { bg: "bg-blue-500/10", text: "text-blue-400" };
 
   const secondaryColors = exerciseMeta?.secondaryMuscle
     ? muscleGroupColors[exerciseMeta.secondaryMuscle] || {
-        bg: "bg-secondary",
-        text: "text-muted-foreground",
-      }
+      bg: "bg-secondary",
+      text: "text-muted-foreground",
+    }
     : null;
 
   // Exercise performance in this session
   const sets = log.sets || [];
+  const convertedSets = sets.map((s) => ({
+    ...s,
+    convertedWeight: convertWeight(s.weight, s.unit || log.unit || "kg", globalUnit),
+  }));
   const topWeight =
-    sets.length > 0 ? Math.max(...sets.map((s) => s.weight)) : 0;
-  const topSet = sets.find((s) => s.weight === topWeight);
-  const sessionVolume = sets.reduce(
-    (sum, s) => sum + (s.reps || 0) * (s.weight || 0),
+    convertedSets.length > 0
+      ? Math.max(...convertedSets.map((s) => s.convertedWeight))
+      : 0;
+  const sessionVolume = convertedSets.reduce(
+    (sum, s) => sum + (s.reps || 0) * s.convertedWeight,
     0
   );
 
@@ -350,10 +362,10 @@ function ExerciseDetailCard({
           : `S${idx + 1}`,
         fullDate: !isNaN(d.getTime())
           ? d.toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
           : hLog.date,
         weight: bestWeight,
         volume: vol,
@@ -434,7 +446,7 @@ function ExerciseDetailCard({
               <p className="text-sm font-bold font-mono text-blue-400">
                 {topWeight}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  {log.unit || "kg"}
+                  {globalUnit}
                 </span>
               </p>
             </div>
@@ -442,9 +454,9 @@ function ExerciseDetailCard({
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Volume</p>
               <p className="text-sm font-bold font-mono text-foreground">
-                {sessionVolume.toLocaleString()}{" "}
+                {Math.round(sessionVolume).toLocaleString()}{" "}
                 <span className="text-xs font-normal text-muted-foreground">
-                  {log.unit || "kg"}
+                  {globalUnit}
                 </span>
               </p>
             </div>
@@ -479,11 +491,10 @@ function ExerciseDetailCard({
                   return (
                     <div
                       key={sIdx}
-                      className={`p-2.5 rounded-lg border text-center transition-all ${
-                        isSetTop
+                      className={`p-2.5 rounded-lg border text-center transition-all ${isSetTop
                           ? "bg-blue-500/10 border-blue-500/30 ring-1 ring-blue-500/20"
                           : "bg-secondary/30 border-border/60 hover:bg-secondary/50"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                         <span>Set {set.setNumber || sIdx + 1}</span>
@@ -544,22 +555,20 @@ function ExerciseDetailCard({
                     <button
                       type="button"
                       onClick={() => setMetric("weight")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                        metric === "weight"
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${metric === "weight"
                           ? "bg-blue-600 text-white shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       Top Load (kg)
                     </button>
                     <button
                       type="button"
                       onClick={() => setMetric("volume")}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
-                        metric === "volume"
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${metric === "volume"
                           ? "bg-purple-600 text-white shadow-xs"
                           : "text-muted-foreground hover:text-foreground"
-                      }`}
+                        }`}
                     >
                       Volume (kg)
                     </button>
@@ -736,8 +745,8 @@ function ExerciseDetailCard({
                         {netGain > 0
                           ? `+${netGain} kg progression since baseline`
                           : netGain === 0
-                          ? "Matched baseline load"
-                          : `${netGain} kg from baseline`}
+                            ? "Matched baseline load"
+                            : `${netGain} kg from baseline`}
                       </div>
                     ) : (
                       <div className="text-muted-foreground text-[11px] italic">

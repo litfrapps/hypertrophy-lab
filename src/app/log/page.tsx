@@ -5,8 +5,10 @@ import { useSearchParams } from "next/navigation";
 import { exercises, muscleGroups, muscleGroupColors } from "@/lib/exercises";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { useSession } from "@/contexts/session-context";
+import { useUnit } from "@/contexts/unit-context";
 import { Exercise, WorkoutSet, WorkoutLog, WorkoutSession } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +22,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   ScrollingTimerPicker,
   formatIntervalLabel,
@@ -41,7 +49,7 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
-  Calendar,
+  Calendar as CalendarIcon,
   Edit2,
   AlertTriangle,
   Layers,
@@ -117,6 +125,285 @@ function saveRoutinesToStorage(routines: SavedRoutine[]) {
   } catch { }
 }
 
+// ─── WorkoutCalendar ─────────────────────────────────────────────────────────
+// Interactive calendar that shows emerald dot indicators on days with workouts.
+// Clicking a date reveals a compact session detail panel below the calendar.
+function WorkoutCalendar({
+  sessions,
+  onEditDate,
+  onDeleteRequest,
+}: {
+  sessions: WorkoutSession[];
+  onEditDate: (session: WorkoutSession) => void;
+  onDeleteRequest: (session: WorkoutSession) => void;
+}) {
+  const { globalUnit, convertWeight } = useUnit();
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+
+  // Build a map of dateKey (YYYY-MM-DD) -> sessions[]
+  const sessionsByDate = useMemo<Record<string, WorkoutSession[]>>(() => {
+    const map: Record<string, WorkoutSession[]> = {};
+    for (const s of sessions) {
+      const d = new Date(s.date);
+      if (isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      if (!map[key]) map[key] = [];
+      map[key].push(s);
+    }
+    // Sort each day's sessions by time descending (most recent first)
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }
+    return map;
+  }, [sessions]);
+
+  // Modifiers — days that have at least one workout
+  const workoutDays = useMemo(
+    () => Object.keys(sessionsByDate).map((k) => new Date(k + "T00:00:00")),
+    [sessionsByDate]
+  );
+
+  const selectedDateKey = selectedDate
+    ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`
+    : null;
+
+  const selectedSessions = selectedDateKey ? (sessionsByDate[selectedDateKey] ?? []) : [];
+
+  function formatSessionTime(seconds: number) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+  }
+
+  return (
+    <div className="space-y-3">
+      {sessions.length === 0 ? (
+        <div className="rounded-xl border border-border/60 bg-card p-6 text-center space-y-2">
+          <Clock className="w-8 h-8 text-muted-foreground/40 mx-auto" />
+          <div className="text-xs font-semibold text-foreground">No sessions logged yet</div>
+          <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
+            Start a session above. Completed sessions will appear here with calendar indicators.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Calendar container */}
+          <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(day) => {
+                if (!day) { setSelectedDate(undefined); return; }
+                const key = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
+                // Toggle off if re-clicking same day with no sessions
+                if (selectedDate && selectedDate.toDateString() === day.toDateString()) {
+                  setSelectedDate(undefined);
+                } else {
+                  setSelectedDate(day);
+                }
+              }}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              modifiers={{ workout: workoutDays }}
+              modifiersClassNames={{
+                workout: "relative",
+              }}
+              components={{
+                DayButton: ({ day, modifiers, ...props }) => {
+                  const d = day.date;
+                  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                  const hasWorkout = !!sessionsByDate[key];
+                  const count = sessionsByDate[key]?.length ?? 0;
+                  const isSelected = selectedDate?.toDateString() === d.toDateString();
+                  return (
+                    <button
+                      {...props}
+                      className={[
+                        props.className,
+                        "relative flex flex-col items-center justify-center w-full h-full rounded-md transition-colors",
+                        isSelected
+                          ? "bg-emerald-600 text-white"
+                          : hasWorkout
+                            ? "hover:bg-emerald-500/10 text-foreground font-semibold"
+                            : "hover:bg-secondary/60 text-foreground",
+                        modifiers.today && !isSelected ? "ring-1 ring-blue-400/60" : "",
+                        modifiers.outside ? "opacity-30" : "",
+                      ].filter(Boolean).join(" ")}
+                    >
+                      <span className="text-[13px] leading-none">{d.getDate()}</span>
+                      {hasWorkout && (
+                        <span className={`mt-0.5 flex gap-px ${isSelected ? "opacity-90" : ""}`}>
+                          {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                            <span
+                              key={i}
+                              className={`w-1 h-1 rounded-full ${isSelected ? "bg-white/80" : "bg-emerald-400"}`}
+                            />
+                          ))}
+                        </span>
+                      )}
+                    </button>
+                  );
+                },
+              }}
+              className="w-full [--cell-size:--spacing(10)]"
+            />
+            {/* Legend */}
+            <div className="px-3 pb-3 flex items-center gap-3 text-[10px] text-muted-foreground border-t border-border/30 pt-2">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+                Workout logged
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded ring-1 ring-blue-400/60 inline-block" />
+                Today
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-3 h-3 rounded bg-emerald-600 inline-block" />
+                Selected
+              </span>
+            </div>
+          </div>
+
+          {/* Selected date sessions panel */}
+          {selectedDate && (
+            <div className="rounded-xl border border-border/60 bg-card overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="px-3.5 py-2.5 border-b border-border/40 bg-secondary/20 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="text-xs font-bold text-foreground">
+                    {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold">
+                    {selectedSessions.length} {selectedSessions.length === 1 ? "session" : "sessions"}
+                  </span>
+                  <button
+                    onClick={() => setSelectedDate(undefined)}
+                    className="p-1 rounded text-muted-foreground/50 hover:text-foreground transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {selectedSessions.length === 0 ? (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  No workouts logged on this day.
+                </div>
+              ) : (
+                <div className="divide-y divide-border/30">
+                  {selectedSessions.map((session, idx) => {
+                    const sessionDate = new Date(session.date);
+                    const timeStr = !isNaN(sessionDate.getTime())
+                      ? sessionDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+                      : null;
+                    const totalSets = session.logs.reduce((s, l) => s + l.sets.length, 0);
+                    const totalVol = session.logs.reduce(
+                      (s, l) =>
+                        s +
+                        l.sets.reduce(
+                          (ss, set) =>
+                            ss +
+                            set.reps *
+                              convertWeight(
+                                set.weight,
+                                set.unit || l.unit || "kg",
+                                globalUnit
+                              ),
+                          0
+                        ),
+                      0
+                    );
+
+                    return (
+                      <div key={session.id} className="p-3 space-y-2 hover:bg-secondary/20 transition-colors">
+                        {/* Session header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="w-5 h-5 rounded-md bg-emerald-500/15 flex items-center justify-center text-emerald-400 font-mono font-bold text-[10px]">
+                              {idx + 1}
+                            </span>
+                            {timeStr && <span className="text-foreground font-semibold">{timeStr}</span>}
+                            {session.durationSeconds && session.durationSeconds > 0 && (
+                              <span className="text-muted-foreground flex items-center gap-0.5">
+                                <Clock className="w-3 h-3 text-cyan-400" />
+                                {formatSessionTime(session.durationSeconds)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onEditDate(session)}
+                              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
+                              title="Adjust date/time"
+                            >
+                              <Edit2 className="w-2.5 h-2.5 mr-0.5" /> Date
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => onDeleteRequest(session)}
+                              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              title="Delete session"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Exercise pills */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {session.logs.map((log) => {
+                            const maxWt =
+                              log.sets.length > 0
+                                ? Math.max(
+                                    ...log.sets.map((s) =>
+                                      convertWeight(
+                                        s.weight,
+                                        s.unit || log.unit || "kg",
+                                        globalUnit
+                                      )
+                                    )
+                                  )
+                                : 0;
+                            return (
+                              <div
+                                key={log.id}
+                                className="px-2 py-0.5 rounded-md bg-secondary/40 border border-border/40 text-[10px] font-medium flex items-center gap-1.5"
+                              >
+                                <span className="font-semibold truncate max-w-[110px]">{log.exerciseName}</span>
+                                <span className="text-muted-foreground">{log.sets.length}s</span>
+                                <span className="font-mono text-blue-400 font-bold">{maxWt} {globalUnit}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Volume footer */}
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/20">
+                          <span>{session.logs.length} {session.logs.length === 1 ? "exercise" : "exercises"} · {totalSets} sets</span>
+                          <span className="font-mono font-bold text-foreground">{Math.round(totalVol).toLocaleString()} {globalUnit}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+
 function WorkoutSessionManager() {
   const searchParams = useSearchParams();
   const preselectedExerciseId = searchParams.get("exercise");
@@ -127,6 +414,8 @@ function WorkoutSessionManager() {
     deleteSession,
     updateSessionDateTime,
     getLastEntryForExercise,
+    globalUnit,
+    convertWeight,
   } = useWorkouts();
 
   // ─── Global Session Context ───────────────────────────────────────────────
@@ -251,6 +540,9 @@ function WorkoutSessionManager() {
   // ─── Cancel Session AlertDialog ───────────────────────────────────────────
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
+  // ─── Empty Session Warning Modal ──────────────────────────────────────────
+  const [emptySessionAlertOpen, setEmptySessionAlertOpen] = useState(false);
+
   // Session Completion Modal
   const [finishedSummary, setFinishedSummary] = useState<{
     durationText: string;
@@ -312,18 +604,19 @@ function WorkoutSessionManager() {
         return last.map((s, idx) => ({
           setNumber: idx + 1,
           reps: s.reps,
-          weight: s.weight,
+          weight: convertWeight(s.weight, s.unit || "kg", globalUnit),
+          unit: globalUnit,
           completed: false,
         }));
       }
       // Default 3 sets — 0 weight/reps when no prior history exists
       return [
-        { setNumber: 1, reps: 0, weight: 0, completed: false },
-        { setNumber: 2, reps: 0, weight: 0, completed: false },
-        { setNumber: 3, reps: 0, weight: 0, completed: false },
+        { setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
+        { setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
+        { setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
       ];
     },
-    [getLastEntryForExercise]
+    [getLastEntryForExercise, convertWeight, globalUnit]
   );
 
   const startNewSession = (initialExercises: Exercise[] = []) => {
@@ -383,6 +676,7 @@ function WorkoutSessionManager() {
             setNumber: item.sets.length + 1,
             reps: lastSet ? lastSet.reps : 0,
             weight: lastSet ? lastSet.weight : 0,
+            unit: globalUnit,
             completed: false,
           };
           return { ...item, sets: [...item.sets, newSet] };
@@ -471,8 +765,14 @@ function WorkoutSessionManager() {
 
   // Finish session & save complete session entity
   const finishSession = () => {
-    if (sessionExercises.length === 0) {
-      ctxCancelSession();
+    // 1. Empty Session Guard: Check if ANY sets are marked as completed/done across all exercises
+    const totalDoneSetsAcrossAll = sessionExercises.reduce(
+      (sum, item) => sum + item.sets.filter((s) => s.completed).length,
+      0
+    );
+
+    if (totalDoneSetsAcrossAll === 0) {
+      setEmptySessionAlertOpen(true);
       return;
     }
 
@@ -485,37 +785,39 @@ function WorkoutSessionManager() {
 
     const finalSessionDateISO = sessionDate || new Date().toISOString();
 
+    // 2. Strict Done Set Filtering: filter out and discard all sets that were NOT explicitly marked done
     sessionExercises.forEach((item) => {
       const finishedSets = item.sets.filter((s) => s.completed);
-      const setsToRecord = finishedSets.length > 0 ? finishedSets : item.sets;
 
-      if (setsToRecord.length > 0) {
+      // Only log exercises that have at least 1 set marked done
+      if (finishedSets.length > 0) {
         const log: WorkoutLog = {
           id: crypto.randomUUID(),
           sessionId: sessionId,
           date: finalSessionDateISO,
           exerciseId: item.exercise.id,
           exerciseName: item.exercise.name,
-          sets: setsToRecord.map((s) => ({
-            setNumber: s.setNumber,
+          sets: finishedSets.map((s, idx) => ({
+            setNumber: idx + 1,
             reps: s.reps,
             weight: s.weight,
+            unit: unit,
           })),
           unit: unit,
         };
 
         completedLogs.push(log);
-        totalCompletedSets += setsToRecord.length;
-        const exVolume = setsToRecord.reduce(
+        totalCompletedSets += finishedSets.length;
+        const exVolume = finishedSets.reduce(
           (sum, s) => sum + s.reps * s.weight,
           0
         );
         totalVolumeLifted += exVolume;
-        const maxWt = Math.max(...setsToRecord.map((s) => s.weight));
+        const maxWt = Math.max(...finishedSets.map((s) => s.weight));
 
         summaryList.push({
           name: item.exercise.name,
-          setsCount: setsToRecord.length,
+          setsCount: finishedSets.length,
           maxWeight: maxWt,
         });
       }
@@ -613,7 +915,7 @@ function WorkoutSessionManager() {
             Session Completed!
           </h1>
           <div className="text-xs text-blue-400 font-mono flex items-center justify-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
+            <CalendarIcon className="w-3.5 h-3.5" />
             <span>{formatSessionDateTime(finishedSummary.sessionDate)}</span>
           </div>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
@@ -636,7 +938,7 @@ function WorkoutSessionManager() {
             <div className="bg-card/80 p-2.5 rounded-xl border border-border/50">
               <div className="text-[10px] text-muted-foreground">Volume</div>
               <div className="text-base font-bold font-mono text-cyan-400">
-                {finishedSummary.totalVolume.toLocaleString()} {unit}
+                {finishedSummary.totalVolume.toLocaleString()} {globalUnit}
               </div>
             </div>
           </div>
@@ -661,7 +963,7 @@ function WorkoutSessionManager() {
                   </div>
                 </div>
                 <div className="text-right font-mono font-bold text-blue-400">
-                  Top: {ex.maxWeight} {unit}
+                  Top: {ex.maxWeight} {globalUnit}
                 </div>
               </div>
             ))}
@@ -727,7 +1029,7 @@ function WorkoutSessionManager() {
                 className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-secondary/70 hover:bg-secondary border border-border/50 text-xs text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
                 title="Adjust session date & time"
               >
-                <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <CalendarIcon className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                 <span>
                   {new Date(sessionDate).toLocaleDateString("en-US", {
                     month: "short",
@@ -747,22 +1049,20 @@ function WorkoutSessionManager() {
                 <button
                   type="button"
                   onClick={() => setUnit("kg")}
-                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${
-                    unit === "kg"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${unit === "kg"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   kg
                 </button>
                 <button
                   type="button"
                   onClick={() => setUnit("lbs")}
-                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${
-                    unit === "lbs"
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`px-3 py-1 rounded-md font-semibold transition-all h-7.5 ${unit === "lbs"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                    }`}
                 >
                   lbs
                 </button>
@@ -1087,13 +1387,37 @@ function WorkoutSessionManager() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* ── Empty Workout Guard Modal ─────────────────── */}
+        <Dialog open={emptySessionAlertOpen} onOpenChange={setEmptySessionAlertOpen}>
+          <DialogContent className="max-w-xs sm:max-w-sm p-6 text-center" showCloseButton={true}>
+            <div className="flex flex-col items-center justify-center py-2 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                No Exercises Logged
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground text-center">
+                You have not logged any exercises yet
+              </DialogDescription>
+              <Button
+                type="button"
+                onClick={() => setEmptySessionAlertOpen(false)}
+                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-lg font-medium"
+              >
+                Continue Workout
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Active Session Date & Time Modal */}
         {activeDateModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
             <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-2xl shadow-2xl p-4 space-y-4">
               <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-cyan-400" />
+                  <CalendarIcon className="w-4 h-4 text-cyan-400" />
                   <h3 className="font-bold text-sm text-foreground">
                     Adjust Session Date & Time
                   </h3>
@@ -1665,135 +1989,25 @@ function WorkoutSessionManager() {
         </div>
       )}
 
-      {/* ---------------------------------------------------- */}
-      {/* LOGGED WORKOUT SESSIONS (Date & Time + Delete Features) */}
-      {/* ---------------------------------------------------- */}
+      {/* ── Interactive Workout Calendar ──────────────────────── */}
       <div className="space-y-3 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-blue-400" />
-            <h2 className="text-sm font-bold text-foreground">
-              Logged Workout Sessions
-            </h2>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 font-mono font-bold">
+            <CalendarIcon className="w-4 h-4 text-emerald-400" />
+            <h2 className="text-sm font-bold text-foreground">Workout Calendar</h2>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono font-bold">
               {sessions.length}
             </span>
           </div>
-          <span className="text-[11px] text-muted-foreground">
-            Adjust date/time or delete
-          </span>
+          <span className="text-[11px] text-muted-foreground">Click a date to view sessions</span>
         </div>
 
-        {sessions.length === 0 ? (
-          <div className="rounded-xl border border-border/60 bg-card p-6 text-center space-y-2">
-            <Clock className="w-8 h-8 text-muted-foreground/40 mx-auto" />
-            <div className="text-xs font-semibold text-foreground">
-              No sessions logged yet
-            </div>
-            <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-              Start a session above. Completed sessions will appear here with full date/time editing and deletion controls.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {sessions.map((session) => {
-              const totalSetsCount = session.logs.reduce(
-                (sum, l) => sum + l.sets.length,
-                0
-              );
-              const totalVol = session.logs.reduce(
-                (sum, l) =>
-                  sum + l.sets.reduce((sSum, s) => sSum + s.reps * s.weight, 0),
-                0
-              );
-              const unitUsed = session.logs[0]?.unit || "kg";
-
-              return (
-                <div
-                  key={session.id}
-                  className="rounded-xl border border-border/60 bg-card p-3.5 hover:border-border/80 transition-all space-y-2.5 shadow-sm"
-                >
-                  {/* Top Bar: Date, Time & Actions */}
-                  <div className="flex items-start justify-between gap-2 border-b border-border/30 pb-2">
-                    <div>
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                        <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                        <span>{formatSessionDateTime(session.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                        {session.durationSeconds && session.durationSeconds > 0 ? (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-cyan-400" />
-                            {formatSessionTime(session.durationSeconds)}
-                          </span>
-                        ) : null}
-                        <span>•</span>
-                        <span>{session.logs.length} exercises</span>
-                        <span>•</span>
-                        <span>{totalSetsCount} sets</span>
-                      </div>
-                    </div>
-
-                    {/* Action buttons: Edit Date/Time & Delete */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditSessionDateModal(session)}
-                        className="h-7 px-2 text-[11px] text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10 transition-colors"
-                        title="Adjust session date & time"
-                      >
-                        <Edit2 className="w-3 h-3 mr-1" />
-                        <span>Date/Time</span>
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleteConfirmSession(session)}
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Delete this session"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Exercises Pill Breakdown */}
-                  <div className="flex flex-wrap gap-1.5">
-                    {session.logs.map((log) => {
-                      const maxWt = Math.max(...log.sets.map((s) => s.weight));
-                      return (
-                        <div
-                          key={log.id}
-                          className="px-2 py-1 rounded-md bg-secondary/40 border border-border/40 text-[10px] font-medium text-foreground flex items-center gap-1.5"
-                        >
-                          <span className="font-semibold truncate max-w-[130px] sm:max-w-none">
-                            {log.exerciseName}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {log.sets.length} sets
-                          </span>
-                          <span className="font-mono text-blue-400 font-bold">
-                            {maxWt} {log.unit}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Footer Volume */}
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/20 text-muted-foreground">
-                    <span>Total Session Volume:</span>
-                    <span className="font-mono font-bold text-foreground">
-                      {totalVol.toLocaleString()} {unitUsed}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Calendar with workout day indicators */}
+        <WorkoutCalendar
+          sessions={sessions}
+          onEditDate={openEditSessionDateModal}
+          onDeleteRequest={setDeleteConfirmSession}
+        />
       </div>
 
       {/* ---------------------------------------------------- */}
@@ -1804,7 +2018,7 @@ function WorkoutSessionManager() {
           <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-2xl shadow-2xl p-4 space-y-4">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-400" />
+                <CalendarIcon className="w-4 h-4 text-blue-400" />
                 <h3 className="font-bold text-sm text-foreground">
                   Adjust Session Date & Time
                 </h3>

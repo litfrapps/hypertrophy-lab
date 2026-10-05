@@ -17,10 +17,12 @@ import {
   UserPlus,
   Clock,
   Zap,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
+import { useUnit } from "@/contexts/unit-context";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -49,8 +51,8 @@ export function Navbar() {
     elapsedSeconds,
     exercises: sessionExercises,
     liveVolume,
-    unit,
   } = useSession();
+  const { globalUnit, toggleGlobalUnit } = useUnit();
 
   // Only show the floating banner when a session is active and NOT on /log
   const showSessionBanner = isActive && pathname !== "/log";
@@ -121,7 +123,7 @@ export function Navbar() {
                     {sessionExercises.length}{" "}
                     {sessionExercises.length === 1 ? "exercise" : "exercises"}
                     {liveVolume > 0 &&
-                      ` · ${liveVolume.toLocaleString()} ${unit}`}
+                      ` · ${liveVolume.toLocaleString()} ${globalUnit}`}
                   </p>
                 </div>
                 <Zap className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
@@ -129,6 +131,42 @@ export function Navbar() {
             </Link>
           </div>
         )}
+
+        {/* Global Weight Unit Setting Row — Desktop Sidebar */}
+        <div className="px-4 py-2 border-t border-border">
+          <div className="flex items-center justify-between p-2 rounded-xl bg-secondary/30 border border-border/50">
+            <div className="flex items-center gap-2">
+              <Scale className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-semibold text-foreground">Weight Unit</span>
+            </div>
+            <div className="flex bg-secondary/80 rounded-lg p-0.5 text-xs h-7 items-center border border-border/60">
+              <button
+                type="button"
+                onClick={() => toggleGlobalUnit("kg")}
+                className={cn(
+                  "px-2.5 py-0.5 rounded-md font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
+                  globalUnit === "kg"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                kg
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleGlobalUnit("lbs")}
+                className={cn(
+                  "px-2.5 py-0.5 rounded-md font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
+                  globalUnit === "lbs"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                lbs
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* User Auth Section */}
         <div className="p-4 border-t border-border space-y-3">
@@ -230,6 +268,46 @@ export function Navbar() {
                   </Link>
                 );
               })}
+
+              {/* Global Weight Unit Setting Row — Mobile Hamburger Menu */}
+              <div className="pt-3 pb-1 border-t border-border mt-3">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 border border-border">
+                  <div className="flex items-center gap-2.5">
+                    <Scale className="w-4 h-4 text-blue-400" />
+                    <div>
+                      <div className="text-sm font-semibold text-foreground">Weight Unit</div>
+                      <p className="text-[11px] text-muted-foreground">App-wide display preference</p>
+                    </div>
+                  </div>
+                  <div className="flex bg-secondary rounded-lg p-0.5 text-xs h-8 items-center border border-border/60">
+                    <button
+                      type="button"
+                      onClick={() => toggleGlobalUnit("kg")}
+                      className={cn(
+                        "px-3 py-1 rounded-md font-semibold transition-all h-6.5 text-xs cursor-pointer",
+                        globalUnit === "kg"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      kg
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleGlobalUnit("lbs")}
+                      className={cn(
+                        "px-3 py-1 rounded-md font-semibold transition-all h-6.5 text-xs cursor-pointer",
+                        globalUnit === "lbs"
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      lbs
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-4 border-t border-border mt-3">
                 <Show when="signed-out">
                   <div className="space-y-2">
@@ -315,7 +393,7 @@ export function Navbar() {
               </div>
               {liveVolume > 0 && (
                 <p className="text-[9px] text-muted-foreground/60 mt-0.5">
-                  {liveVolume.toLocaleString()} {unit} logged
+                  {liveVolume.toLocaleString()} {globalUnit} logged
                 </p>
               )}
             </div>
