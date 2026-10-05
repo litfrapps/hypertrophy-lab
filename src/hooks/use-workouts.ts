@@ -522,6 +522,8 @@ export function useWorkouts() {
     toggleGlobalUnit,
     convertWeight: unitConvertWeight,
     formatWeight: unitFormatWeight,
+    // E1RM calculator
+    calculateE1RM,
     // Derived helpers
     lifetimeSetCounts,
     topExerciseId,

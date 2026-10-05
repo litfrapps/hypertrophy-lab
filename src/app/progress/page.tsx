@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useWorkouts } from "@/hooks/use-workouts";
+import { useWorkouts, calculateE1RM } from "@/hooks/use-workouts";
 import { exercises } from "@/lib/exercises";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import {
   Flame,
   Trash2,
   ChevronsUpDown,
+  Target,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -197,20 +198,94 @@ function ProgressContent() {
     return { chartData: [], logsList: [] };
   }, [workouts, selectedExerciseId, globalUnit, convertWeight]);
 
-  // High score stats
-  const prWeight =
-    chartData.length > 0 ? Math.max(...chartData.map((d) => d.weight)) : 0;
-  const firstWeight = chartData.length > 0 ? chartData[0].weight : 0;
-  const latestWeight =
-    chartData.length > 0 ? chartData[chartData.length - 1].weight : 0;
+  // Flatten all sets for selected exercise with dynamic unit conversion
+  const allCompletedSets = useMemo(() => {
+    return logsList.flatMap((log) =>
+      (log.sets || []).map((s) => ({
+        ...s,
+        convertedWeight: convertWeight(
+          s.weight,
+          s.unit || log.unit || "kg",
+          globalUnit
+        ),
+        date: log.date,
+      }))
+    );
+  }, [logsList, convertWeight, globalUnit]);
+
+  const hasCompletedSets = allCompletedSets.length > 0;
+
+  // Row 1 & Row 4: Peak performance set (highest weight, highest reps as tie-breaker)
+  const topSet = useMemo(() => {
+    if (allCompletedSets.length === 0) return null;
+    return allCompletedSets.reduce((best, s) => {
+      if (!best) return s;
+      if (s.convertedWeight > best.convertedWeight) return s;
+      if (s.convertedWeight === best.convertedWeight && s.reps > best.reps) return s;
+      return best;
+    }, allCompletedSets[0]);
+  }, [allCompletedSets]);
+
+  const prWeight = topSet ? topSet.convertedWeight : 0;
+  const prReps = topSet ? topSet.reps : 0;
+
+  // Row 2: Current Load — most recent working set weight logged
+  const latestLog = logsList.length > 0 ? logsList[logsList.length - 1] : null;
+  const latestWorkingSet = useMemo(() => {
+    if (!latestLog || !latestLog.sets || latestLog.sets.length === 0) return null;
+    const converted = latestLog.sets.map((s) => ({
+      ...s,
+      convertedWeight: convertWeight(
+        s.weight,
+        s.unit || latestLog.unit || "kg",
+        globalUnit
+      ),
+    }));
+    return converted.reduce((best, s) =>
+      s.convertedWeight > best.convertedWeight ? s : best
+    , converted[0]);
+  }, [latestLog, convertWeight, globalUnit]);
+
+  const latestWeight = latestWorkingSet ? latestWorkingSet.convertedWeight : 0;
+  const latestReps = latestWorkingSet ? latestWorkingSet.reps : 0;
+
+  // Row 3: Net Progression — net increase in weight / volume overload
+  const firstLog = logsList.length > 0 ? logsList[0] : null;
+  const firstWorkingSet = useMemo(() => {
+    if (!firstLog || !firstLog.sets || firstLog.sets.length === 0) return null;
+    const converted = firstLog.sets.map((s) => ({
+      ...s,
+      convertedWeight: convertWeight(
+        s.weight,
+        s.unit || firstLog.unit || "kg",
+        globalUnit
+      ),
+    }));
+    return converted.reduce((best, s) =>
+      s.convertedWeight > best.convertedWeight ? s : best
+    , converted[0]);
+  }, [firstLog, convertWeight, globalUnit]);
+
+  const firstWeight = firstWorkingSet ? firstWorkingSet.convertedWeight : 0;
   const weightGain =
-    chartData.length > 1
+    hasCompletedSets && logsList.length > 1
       ? Math.round((latestWeight - firstWeight) * 10) / 10
       : 0;
   const percentageGain =
-    firstWeight > 0
+    hasCompletedSets && firstWeight > 0
       ? Math.round(((latestWeight - firstWeight) / firstWeight) * 100)
       : 0;
+
+  // Row 4: Estimated 1RM — calculated E1RM using top set performance: E1RM = Weight * (1 + Reps / 30)
+  const estimated1RM = useMemo(() => {
+    if (!topSet || topSet.convertedWeight <= 0 || topSet.reps <= 0) return 0;
+    return calculateE1RM(topSet.convertedWeight, topSet.reps);
+  }, [topSet]);
+
+  // Row 5: Tracked Sessions — total session count where this exercise was logged
+  const trackedSessionsCount = useMemo(() => {
+    return logsList.filter((l) => (l.sets?.length || 0) > 0).length;
+  }, [logsList]);
 
   // Clear all logs for current exercise
   const handleClearAllExerciseLogs = () => {
@@ -331,79 +406,196 @@ function ProgressContent() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-border bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">All-Time PR</span>
-              <Award className="w-4 h-4 text-amber-400" />
+      {/* Exercise Stats Stack (5-Row Vertical Layout) */}
+      <div className="flex flex-col gap-2 w-full">
+        {/* Row 1 (Top): All-Time PR */}
+        <Card className="border-border bg-card hover:border-amber-500/30 transition-colors">
+          <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-400">
+                <Award className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                  All-Time PR
+                </div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
+                  {hasCompletedSets && topSet ? (
+                    <span className="text-amber-400/90 font-medium">
+                      Peak: {prWeight} {globalUnit} × {prReps} reps
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-2xl font-bold font-mono">
-              {prWeight}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                {globalUnit}
-              </span>
-            </div>
-            <div className="text-[11px] text-green-400 mt-1 flex items-center gap-0.5">
-              <Flame className="w-3 h-3" /> Peak Weight
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">Current Load</span>
-              <Dumbbell className="w-4 h-4 text-blue-400" />
-            </div>
-            <div className="text-2xl font-bold font-mono">
-              {latestWeight}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                {globalUnit}
-              </span>
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              Latest Session
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">
-                Net Progression
-              </span>
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="text-2xl font-bold font-mono text-emerald-400">
-              {weightGain >= 0 ? `+${weightGain}` : weightGain}{" "}
-              <span className="text-xs font-normal text-muted-foreground">
-                {globalUnit}
-              </span>
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              {percentageGain > 0
-                ? `+${percentageGain}% increase`
-                : "Baseline recorded"}
+            <div className="text-right shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">
+                {hasCompletedSets && topSet ? (
+                  <>
+                    {prWeight}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {globalUnit}
+                    </span>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted-foreground">
-                Tracked Sessions
-              </span>
-              <Calendar className="w-4 h-4 text-purple-400" />
+        {/* Row 2: Current Load */}
+        <Card className="border-border bg-card hover:border-blue-500/30 transition-colors">
+          <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0 text-blue-400">
+                <Dumbbell className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                  Current Load
+                </div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
+                  {hasCompletedSets && latestWorkingSet ? (
+                    `Latest set (${latestReps} reps)`
+                  ) : (
+                    "—"
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="text-2xl font-bold font-mono">
-              {chartData.length}
+            <div className="text-right shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">
+                {hasCompletedSets && latestWorkingSet ? (
+                  <>
+                    {latestWeight}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {globalUnit}
+                    </span>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </div>
             </div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              Logged datapoints
+          </CardContent>
+        </Card>
+
+        {/* Row 3: Net Progression */}
+        <Card className="border-border bg-card hover:border-emerald-500/30 transition-colors">
+          <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-400">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                  Net Progression
+                </div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
+                  {!hasCompletedSets ? (
+                    "—"
+                  ) : logsList.length > 1 ? (
+                    percentageGain > 0 ? (
+                      `+${percentageGain}% vs baseline`
+                    ) : percentageGain < 0 ? (
+                      `${percentageGain}% vs baseline`
+                    ) : (
+                      "Equal to baseline"
+                    )
+                  ) : (
+                    "Baseline recorded"
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">
+                {hasCompletedSets ? (
+                  <span className="text-emerald-400">
+                    {weightGain >= 0 ? `+${weightGain}` : weightGain}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {globalUnit}
+                    </span>
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Row 4: Estimated 1RM */}
+        <Card className="border-border bg-card hover:border-cyan-500/30 transition-colors">
+          <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center shrink-0 text-cyan-400">
+                <Target className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                  Estimated 1RM
+                </div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
+                  {hasCompletedSets && topSet && estimated1RM > 0 ? (
+                    <span className="text-cyan-400/90 font-medium">
+                      E1RM formula · Top set ({topSet.convertedWeight} {globalUnit} × {topSet.reps} reps)
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">
+                {hasCompletedSets && estimated1RM > 0 ? (
+                  <span className="text-cyan-400">
+                    {estimated1RM}{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {globalUnit}
+                    </span>
+                  </span>
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Row 5: Tracked Sessions */}
+        <Card className="border-border bg-card hover:border-purple-500/30 transition-colors">
+          <CardContent className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0 text-purple-400">
+                <Calendar className="w-4 h-4" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] sm:text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-tight">
+                  Tracked Sessions
+                </div>
+                <div className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-snug break-words">
+                  {hasCompletedSets && trackedSessionsCount > 0 ? (
+                    `${trackedSessionsCount} logged ${trackedSessionsCount === 1 ? "session" : "sessions"}`
+                  ) : (
+                    "—"
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-xl sm:text-2xl font-bold font-mono">
+                {hasCompletedSets && trackedSessionsCount > 0 ? (
+                  trackedSessionsCount
+                ) : (
+                  "—"
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
