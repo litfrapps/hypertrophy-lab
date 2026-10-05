@@ -545,6 +545,9 @@ function WorkoutSessionManager() {
   // ─── Empty Session Warning Modal ──────────────────────────────────────────
   const [emptySessionAlertOpen, setEmptySessionAlertOpen] = useState(false);
 
+  // ─── Incomplete Set Validation Alert Modal ────────────────────────────────
+  const [invalidSetAlertOpen, setInvalidSetAlertOpen] = useState(false);
+
   // Session Completion Modal
   const [finishedSummary, setFinishedSummary] = useState<{
     durationText: string;
@@ -723,10 +726,28 @@ function WorkoutSessionManager() {
 
   // Checking off a set -> Triggers the rest timer INSIDE that exercise box
   const toggleSetComplete = (itemId: string, setIndex: number) => {
+    // 1. Locate the exercise item and the target set
+    const item = sessionExercises.find((ex) => ex.id === itemId);
+    if (!item) return;
+    const targetSet = item.sets[setIndex];
+    if (!targetSet) return;
+
+    // 2. Validate inputs before marking as completed:
+    // If not currently completed and attempting to mark as done, check weight and reps:
+    if (!targetSet.completed) {
+      const weight = Number(targetSet.weight);
+      const reps = Number(targetSet.reps);
+
+      if (isNaN(weight) || weight <= 0 || isNaN(reps) || reps <= 0) {
+        setInvalidSetAlertOpen(true);
+        return;
+      }
+    }
+
     setSessionExercises((prev) =>
-      prev.map((item) => {
-        if (item.id === itemId) {
-          const updatedSets = item.sets.map((s, idx) => {
+      prev.map((it) => {
+        if (it.id === itemId) {
+          const updatedSets = it.sets.map((s, idx) => {
             if (idx === setIndex) {
               const nextState = !s.completed;
               return { ...s, completed: nextState };
@@ -734,15 +755,15 @@ function WorkoutSessionManager() {
             return s;
           });
 
-          const justCompleted = !item.sets[setIndex].completed;
+          const justCompleted = !it.sets[setIndex].completed;
           return {
-            ...item,
+            ...it,
             sets: updatedSets,
-            timerActive: justCompleted ? true : item.timerActive,
-            timerKey: justCompleted ? item.timerKey + 1 : item.timerKey,
+            timerActive: justCompleted ? true : it.timerActive,
+            timerKey: justCompleted ? it.timerKey + 1 : it.timerKey,
           };
         }
-        return item;
+        return it;
       })
     );
   };
@@ -1428,6 +1449,30 @@ function WorkoutSessionManager() {
                 className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-lg font-medium"
               >
                 Continue Workout
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* ── Incomplete Set Validation Alert Modal ───────── */}
+        <Dialog open={invalidSetAlertOpen} onOpenChange={setInvalidSetAlertOpen}>
+          <DialogContent className="max-w-xs sm:max-w-sm p-6 text-center" showCloseButton={true}>
+            <div className="flex flex-col items-center justify-center py-2 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-base font-semibold text-foreground">
+                Incomplete Set
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground text-center">
+                Please input load and reps.
+              </DialogDescription>
+              <Button
+                type="button"
+                onClick={() => setInvalidSetAlertOpen(false)}
+                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-lg font-medium"
+              >
+                Got it
               </Button>
             </div>
           </DialogContent>
