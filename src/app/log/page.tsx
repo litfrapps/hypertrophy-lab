@@ -1077,7 +1077,7 @@ function WorkoutSessionManager() {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // RENDER: Pre-Session Landing (Start + Routines & Templates + Calendar)
+  // RENDER: Pre-Session Landing (Start + Routines + Calendar)
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6 max-w-2xl mx-auto py-2 px-1 sm:px-0">
