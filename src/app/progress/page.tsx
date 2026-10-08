@@ -672,12 +672,13 @@ function ProgressContent() {
                       boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.5)",
                     }}
                     labelStyle={{ color: "#94a3b8", fontWeight: 600 }}
-                    formatter={(value: any, name: any) => {
+                    formatter={(value: unknown, name: unknown) => {
+                      const v = value as number;
                       if (name === "weight")
-                        return [`${value} ${globalUnit}`, "Top Set Load"];
+                        return [`${v} ${globalUnit}`, "Top Set Load"];
                       if (name === "volume")
-                        return [`${Number(value).toLocaleString()} ${globalUnit}`, "Session Volume"];
-                      return [value, name];
+                        return [`${Number(v).toLocaleString()} ${globalUnit}`, "Session Volume"];
+                      return [String(v), String(name)];
                     }}
                   />
                   <Area

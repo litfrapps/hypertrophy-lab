@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
+import { FloatingBanner } from "@/components/log/floating-banner";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -68,7 +69,7 @@ export function Navbar() {
           </div>
           <div>
             <h1 className="text-lg font-bold tracking-tight text-foreground">
-              Hypertrophy
+              Muscle
             </h1>
             <p className="text-xs text-muted-foreground -mt-0.5 tracking-widest uppercase">
               Lab
@@ -213,7 +214,7 @@ export function Navbar() {
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
               <Dumbbell className="w-4 h-4 text-white" />
             </div>
-            <span className="font-bold text-foreground">Hypertrophy Lab</span>
+            <span className="font-bold text-foreground">Muscle Lab</span>
           </Link>
           <div className="flex items-center gap-2">
             <Show when="signed-out">
@@ -373,36 +374,13 @@ export function Navbar() {
 
       {/* Floating Active Session Banner — Mobile (sits just above bottom tab bar) */}
       {showSessionBanner && (
-        <Link
-          href="/log"
-          className="lg:hidden fixed bottom-[68px] left-3 right-3 z-40"
-        >
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card/95 backdrop-blur-md border border-emerald-500/40 shadow-xl shadow-emerald-500/10 hover:border-emerald-500/60 transition-all animate-fade-in-up">
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold font-mono text-emerald-400">
-                  {fmtTime(elapsedSeconds)}
-                </span>
-                <span className="text-[10px] text-muted-foreground truncate">
-                  ·{" "}
-                  {sessionExercises[0]?.exercise.name
-                    ? `${sessionExercises[0].exercise.name}${sessionExercises.length > 1 ? ` +${sessionExercises.length - 1}` : ""}`
-                    : `${sessionExercises.length} exercises`}
-                </span>
-              </div>
-              {liveVolume > 0 && (
-                <p className="text-[9px] text-muted-foreground/60 mt-0.5">
-                  {liveVolume.toLocaleString()} {globalUnit} logged
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 text-emerald-400 text-[11px] font-bold shrink-0 bg-emerald-500/15 px-2 py-1 rounded-lg">
-              <Zap className="w-3 h-3" />
-              <span>Return</span>
-            </div>
-          </div>
-        </Link>
+        <FloatingBanner
+          elapsedSeconds={elapsedSeconds}
+          exerciseCount={sessionExercises.length}
+          firstExerciseName={sessionExercises[0]?.exercise.name}
+          liveVolume={liveVolume}
+          unit={globalUnit}
+        />
       )}
     </>
   );

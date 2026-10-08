@@ -48,7 +48,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Custom Hypertrophy Lab colors */
+  /* Muscle Lab — brand palette */
   --color-navy-900: #0b1120;
   --color-navy-800: #111827;
   --color-navy-700: #1a2332;
@@ -58,9 +58,11 @@
   --color-accent-cyan: #06b6d4;
   --color-accent-green: #10b981;
   --color-accent-purple: #8b5cf6;
+  --color-accent-amber: #f59e0b;
+  --color-muscle-red: #f43f5e;
 }
 
-/* Hypertrophy Lab — Always Dark Theme */
+/* Muscle Lab — Always Dark Theme */
 :root {
   --background: #0b1120;
   --foreground: #f1f5f9;

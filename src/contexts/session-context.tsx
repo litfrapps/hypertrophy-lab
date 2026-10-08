@@ -15,6 +15,7 @@ import { useUnit, UNIT_STORAGE_KEY } from "@/contexts/unit-context";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface SessionExerciseSet extends WorkoutSet {
+  unit: "kg" | "lbs"; // make unit required (WorkoutSet has it optional)
   completed: boolean;
 }
 
@@ -97,9 +98,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           timerActive: false,
           timerKey: 0,
           sets: [
-            { setNumber: 1, reps: 0, weight: 0, completed: false },
-            { setNumber: 2, reps: 0, weight: 0, completed: false },
-            { setNumber: 3, reps: 0, weight: 0, completed: false },
+            { setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
+            { setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
+            { setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
           ],
         }))
       );

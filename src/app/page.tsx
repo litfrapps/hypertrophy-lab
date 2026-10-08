@@ -174,11 +174,11 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-lg sm:text-xl font-bold tracking-tight leading-tight">
               Welcome to{" "}
-              <span className="gradient-text">Hypertrophy Lab</span>
+              <span className="gradient-text">Muscle Lab</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Science-backed training tracker — log workouts, visualize progress
-              &amp; optimize your gains.
+              Science-backed hypertrophy tracker — log workouts, visualize
+              progressive overload &amp; optimize your gains.
             </p>
           </div>
         </div>
