@@ -569,6 +569,12 @@ function WorkoutSessionManager() {
   // ─── Incomplete Set Validation Alert Modal ────────────────────────────────
   const [invalidSetAlertOpen, setInvalidSetAlertOpen] = useState(false);
 
+  // ─── Muscle Group Mismatch Confirmation ───────────────────────────────────
+  const [mismatchDialogOpen, setMismatchDialogOpen] = useState(false);
+  const [pendingExercise, setPendingExercise] = useState<Exercise | null>(null);
+  // 'session' = active workout picker, 'routine' = routine builder picker
+  const [mismatchContext, setMismatchContext] = useState<'session' | 'routine'>('session');
+
   // Session Completion Modal
   const [finishedSummary, setFinishedSummary] = useState<{
     durationText: string;
@@ -667,6 +673,21 @@ function WorkoutSessionManager() {
   };
 
   const addExerciseToSession = (exercise: Exercise) => {
+    // Check for muscle group mismatch
+    if (sessionExercises.length > 0) {
+      const existingMuscle = sessionExercises[0].exercise.primaryMuscle;
+      if (exercise.primaryMuscle !== existingMuscle) {
+        // Pause and ask the user — do NOT close picker
+        setPendingExercise(exercise);
+        setMismatchContext('session');
+        setMismatchDialogOpen(true);
+        return;
+      }
+    }
+    commitAddExerciseToSession(exercise);
+  };
+
+  const commitAddExerciseToSession = (exercise: Exercise) => {
     const newItem: SessionExerciseItem = {
       id: crypto.randomUUID(),
       exercise,
@@ -679,6 +700,40 @@ function WorkoutSessionManager() {
     setPickerOpen(false);
     setPickerSearch("");
     setPickerMuscle("");
+  };
+
+  const addExerciseToRoutine = (exercise: Exercise) => {
+    // Check for muscle group mismatch against already-selected routine exercises
+    if (routineExerciseIds.length > 0) {
+      const firstEx = exercises.find((e) => e.id === routineExerciseIds[0]);
+      if (firstEx && exercise.primaryMuscle !== firstEx.primaryMuscle) {
+        setPendingExercise(exercise);
+        setMismatchContext('routine');
+        setMismatchDialogOpen(true);
+        return;
+      }
+    }
+    commitAddExerciseToRoutine(exercise);
+  };
+
+  const commitAddExerciseToRoutine = (exercise: Exercise) => {
+    setRoutineExerciseIds((prev) => [...prev, exercise.id]);
+  };
+
+  const handleMismatchInclude = () => {
+    if (!pendingExercise) return;
+    if (mismatchContext === 'session') {
+      commitAddExerciseToSession(pendingExercise);
+    } else {
+      commitAddExerciseToRoutine(pendingExercise);
+    }
+    setPendingExercise(null);
+    setMismatchDialogOpen(false);
+  };
+
+  const handleMismatchCancel = () => {
+    setPendingExercise(null);
+    setMismatchDialogOpen(false);
   };
 
   const removeExerciseFromSession = (itemId: string) => {
@@ -1499,6 +1554,30 @@ function WorkoutSessionManager() {
           </DialogContent>
         </Dialog>
 
+        {/* ── Muscle Group Mismatch Confirmation Dialog ────── */}
+        <AlertDialog open={mismatchDialogOpen} onOpenChange={(open) => { if (!open) handleMismatchCancel(); }}>
+          <AlertDialogContent className="max-w-sm" style={{ zIndex: 9999 }}>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                Mixed Muscle Groups
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                These are two different muscle groups, are you sure you want to include them together in your routine?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleMismatchCancel}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleMismatchInclude}
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                Include
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Active Session Date & Time Modal */}
         {activeDateModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
@@ -2006,7 +2085,7 @@ function WorkoutSessionManager() {
                       if (isAdded) {
                         setRoutineExerciseIds((prev) => prev.filter((id) => id !== ex.id));
                       } else {
-                        setRoutineExerciseIds((prev) => [...prev, ex.id]);
+                        addExerciseToRoutine(ex);
                       }
                     }}
                     className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${isAdded ? "bg-purple-500/15 border border-purple-500/30" : "hover:bg-secondary/70 border border-transparent"
@@ -2236,6 +2315,29 @@ function WorkoutSessionManager() {
           onDeleteSession={deleteSession}
         />
       )}
+      {/* ── Muscle Group Mismatch Confirmation Dialog (Pre-session / Routine Builder) ── */}
+      <AlertDialog open={mismatchDialogOpen} onOpenChange={(open) => { if (!open) handleMismatchCancel(); }}>
+        <AlertDialogContent className="max-w-sm" style={{ zIndex: 9999 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              Mixed Muscle Groups
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              These are two different muscle groups, are you sure you want to include them together in your routine?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleMismatchCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleMismatchInclude}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              Include
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
