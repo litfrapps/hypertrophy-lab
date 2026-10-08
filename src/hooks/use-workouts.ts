@@ -97,6 +97,12 @@ function saveLocalSessions(sessions: WorkoutSession[]) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    // Asynchronously dispatch outside of current React render cycle
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("hypertrophy-sessions-updated", { detail: sessions })
+      );
+    }, 0);
   } catch (err) {
     console.warn("[useWorkouts] Failed to write to localStorage:", err);
   }
@@ -118,13 +124,32 @@ export function useWorkouts() {
   const [isOffline, setIsOffline] = useState(false);
 
   // ──────────────────────────────────────────
-  // 1. Initial Load: Immediate local hydration
+  // 1. Initial Load: Immediate local hydration & sync across instances
   // ──────────────────────────────────────────
   useEffect(() => {
     const cached = loadLocalSessions();
     if (cached.length > 0) {
       setSessions(cached);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent<WorkoutSession[]>;
+      if (customEvent.detail && Array.isArray(customEvent.detail)) {
+        setSessions(customEvent.detail);
+      } else {
+        const cached = loadLocalSessions();
+        if (cached.length > 0) setSessions(cached);
+      }
+    };
+    window.addEventListener("hypertrophy-sessions-updated", handleSync);
+    window.addEventListener("storage", handleSync);
+    return () => {
+      window.removeEventListener("hypertrophy-sessions-updated", handleSync);
+      window.removeEventListener("storage", handleSync);
+    };
   }, []);
 
   // ──────────────────────────────────────────
@@ -169,28 +194,26 @@ export function useWorkouts() {
         if (Array.isArray(remoteSessions) && isMounted) {
           setIsOffline(false);
 
-          setSessions((currentSessions) => {
-            const local = currentSessions.length > 0 ? currentSessions : loadLocalSessions();
-            const remoteIds = new Set(remoteSessions.map((s) => s.id));
-            const unsynced = local.filter((s) => !remoteIds.has(s.id));
+          const local = loadLocalSessions();
+          const remoteIds = new Set(remoteSessions.map((s) => s.id));
+          const unsynced = local.filter((s) => !remoteIds.has(s.id));
 
-            // Background sync: Upload local sessions that don't exist on server yet
-            if (unsynced.length > 0) {
-              unsynced.forEach((s) => {
-                fetch("/api/sessions", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(s),
-                }).catch((err) => {
-                  console.warn("[useWorkouts] Background sync error for session:", s.id, err);
-                });
+          // Background sync: Upload local sessions that don't exist on server yet
+          if (unsynced.length > 0) {
+            unsynced.forEach((s) => {
+              fetch("/api/sessions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(s),
+              }).catch((err) => {
+                console.warn("[useWorkouts] Background sync error for session:", s.id, err);
               });
-            }
+            });
+          }
 
-            const merged = [...unsynced, ...remoteSessions];
-            saveLocalSessions(merged);
-            return merged;
-          });
+          const merged = [...unsynced, ...remoteSessions];
+          saveLocalSessions(merged);
+          setSessions(merged);
         }
       } catch (err) {
         // Network offline or fetch error — keep localStorage
@@ -250,11 +273,10 @@ export function useWorkouts() {
   // ──────────────────────────────────────────
   const addSession = useCallback(async (newSession: WorkoutSession) => {
     // 1. Always save to local state and localStorage immediately
-    setSessions((prev) => {
-      const updated = [newSession, ...prev.filter((s) => s.id !== newSession.id)];
-      saveLocalSessions(updated);
-      return updated;
-    });
+    const current = loadLocalSessions();
+    const updated = [newSession, ...current.filter((s) => s.id !== newSession.id)];
+    saveLocalSessions(updated);
+    setSessions(updated);
     setIsSaving(true);
 
     // 2. Try to sync to Supabase
@@ -292,11 +314,10 @@ export function useWorkouts() {
   // ──────────────────────────────────────────
   const deleteSession = useCallback(async (sessionId: string) => {
     // 1. Remove from state and localStorage immediately
-    setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== sessionId);
-      saveLocalSessions(updated);
-      return updated;
-    });
+    const current = loadLocalSessions();
+    const updated = current.filter((s) => s.id !== sessionId);
+    saveLocalSessions(updated);
+    setSessions(updated);
 
     // 2. Try to sync deletion to server
     try {
@@ -321,13 +342,12 @@ export function useWorkouts() {
       return;
     }
 
-    setSessions((prev) => {
-      const updated = prev.map((s) =>
-        s.id === updatedSession.id ? updatedSession : s
-      );
-      saveLocalSessions(updated);
-      return updated;
-    });
+    const current = loadLocalSessions();
+    const updated = current.map((s) =>
+      s.id === updatedSession.id ? updatedSession : s
+    );
+    saveLocalSessions(updated);
+    setSessions(updated);
 
     try {
       const res = await fetch(`/api/sessions/${updatedSession.id}`, {
@@ -350,19 +370,18 @@ export function useWorkouts() {
   const updateSessionDateTime = useCallback(
     async (sessionId: string, newDateISO: string) => {
       // 1. Update state and localStorage immediately
-      setSessions((prev) => {
-        const updated = prev.map((s) =>
-          s.id === sessionId
-            ? {
-              ...s,
-              date: newDateISO,
-              logs: s.logs.map((l) => ({ ...l, date: newDateISO })),
-            }
-            : s
-        );
-        saveLocalSessions(updated);
-        return updated;
-      });
+      const current = loadLocalSessions();
+      const updated = current.map((s) =>
+        s.id === sessionId
+          ? {
+            ...s,
+            date: newDateISO,
+            logs: s.logs.map((l) => ({ ...l, date: newDateISO })),
+          }
+          : s
+      );
+      saveLocalSessions(updated);
+      setSessions(updated);
 
       // 2. Try to sync update to server
       try {

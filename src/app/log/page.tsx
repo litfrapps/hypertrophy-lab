@@ -33,6 +33,7 @@ import {
   formatIntervalLabel,
 } from "@/components/timer/scrolling-timer-picker";
 import { ExerciseInlineTimer } from "@/components/timer/exercise-inline-timer";
+import { SessionDetailDialog } from "@/components/dashboard/session-detail-dialog";
 import {
   Play,
   Check,
@@ -51,6 +52,7 @@ import {
   TrendingUp,
   Calendar as CalendarIcon,
   Edit2,
+  ChevronRight,
   AlertTriangle,
   Layers,
   Ban,
@@ -134,10 +136,12 @@ function WorkoutCalendar({
   sessions,
   onEditDate,
   onDeleteRequest,
+  onSelectSession,
 }: {
   sessions: WorkoutSession[];
   onEditDate: (session: WorkoutSession) => void;
   onDeleteRequest: (session: WorkoutSession) => void;
+  onSelectSession: (sessionId: string) => void;
 }) {
   const { globalUnit, convertWeight } = useUnit();
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
@@ -297,7 +301,7 @@ function WorkoutCalendar({
                   No workouts logged on this day.
                 </div>
               ) : (
-                <div className="divide-y divide-border/30">
+                <div className="p-3 space-y-2.5">
                   {selectedSessions.map((session, idx) => {
                     const sessionDate = new Date(session.date);
                     const timeStr = !isNaN(sessionDate.getTime())
@@ -322,7 +326,11 @@ function WorkoutCalendar({
                     );
 
                     return (
-                      <div key={session.id} className="p-3 space-y-2 hover:bg-secondary/20 transition-colors">
+                      <div
+                        key={session.id}
+                        onClick={() => onSelectSession(session.id)}
+                        className="group relative p-3 space-y-2 rounded-xl border border-border/40 bg-card/60 hover:bg-secondary/20 cursor-pointer hover:border-primary/50 transition-colors"
+                      >
                         {/* Session header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-xs">
@@ -341,7 +349,10 @@ function WorkoutCalendar({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => onEditDate(session)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEditDate(session);
+                              }}
                               className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
                               title="Adjust date/time"
                             >
@@ -350,12 +361,18 @@ function WorkoutCalendar({
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => onDeleteRequest(session)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteRequest(session);
+                              }}
                               className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                               title="Delete session"
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
+                            <div className="p-1 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </div>
                           </div>
                         </div>
 
@@ -413,6 +430,7 @@ function WorkoutSessionManager() {
   const {
     addSession,
     sessions,
+    updateSession,
     deleteSession,
     updateSessionDateTime,
     getLastEntryForExercise,
@@ -538,6 +556,9 @@ function WorkoutSessionManager() {
 
   // Delete Session Confirmation Modal
   const [deleteConfirmSession, setDeleteConfirmSession] = useState<WorkoutSession | null>(null);
+
+  // Shared Session Details Modal State
+  const [selectedSessionIdForModal, setSelectedSessionIdForModal] = useState<string | null>(null);
 
   // ─── Cancel Session AlertDialog ───────────────────────────────────────────
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
@@ -2074,6 +2095,7 @@ function WorkoutSessionManager() {
           sessions={sessions}
           onEditDate={openEditSessionDateModal}
           onDeleteRequest={setDeleteConfirmSession}
+          onSelectSession={(sessionId) => setSelectedSessionIdForModal(sessionId)}
         />
       </div>
 
@@ -2201,6 +2223,18 @@ function WorkoutSessionManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL: Shared Editable Session Details */}
+      {/* ---------------------------------------------------- */}
+      {selectedSessionIdForModal && (
+        <SessionDetailDialog
+          sessionId={selectedSessionIdForModal}
+          onClose={() => setSelectedSessionIdForModal(null)}
+          onSave={updateSession}
+          onDeleteSession={deleteSession}
+        />
       )}
     </div>
   );
