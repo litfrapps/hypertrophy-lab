@@ -127,3 +127,5 @@ export function SessionHeader({
     </div>
   );
 }
+
+export default SessionHeader;
