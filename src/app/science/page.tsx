@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { researchPapers, paperCategories } from "@/lib/papers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import {
   ExternalLink,
   Award,
   CheckCircle2,
-  Share2,
   Sparkles,
   Bot,
   Filter,
@@ -121,7 +120,7 @@ export default function SciencePage() {
               <BookOpen className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
               <h3 className="font-semibold text-foreground">No studies match your query</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Try searching for different terms like "volume", "protein", or "failure".
+                Try searching for different terms like &quot;volume&quot;, &quot;protein&quot;, or &quot;failure&quot;.
               </p>
             </CardContent>
           </Card>
@@ -164,7 +163,7 @@ export default function SciencePage() {
 
                 {/* Abstract snippet */}
                 <p className="text-xs sm:text-sm text-muted-foreground/90 leading-relaxed border-l-2 border-blue-500/40 pl-3 italic">
-                  "{paper.abstract}"
+                  &quot;{paper.abstract}&quot;
                 </p>
 
                 {/* Key Findings Box */}

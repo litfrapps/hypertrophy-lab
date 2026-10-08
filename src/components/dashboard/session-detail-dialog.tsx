@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useWorkouts } from "@/hooks/use-workouts";
-import { useUnit } from "@/contexts/unit-context";
 import { exercises } from "@/lib/exercises";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -79,25 +78,29 @@ export function SessionDetailDialog({
 
   useEffect(() => {
     if (activeSession) {
-      setEditedLogs(
-        activeSession.logs.map((l) => ({
-          ...l,
-          unit: globalUnit,
-          sets: l.sets.map((s) => ({
-            ...s,
-            weight: convertWeight(s.weight, s.unit || l.unit || "kg", globalUnit),
+      setTimeout(() => {
+        setEditedLogs(
+          activeSession.logs.map((l) => ({
+            ...l,
             unit: globalUnit,
-          })),
-        }))
-      );
-      setExerciseSearch("");
-      setShowExercisePicker(false);
-      setLastExerciseAlertOpen(false);
-      setDeleteSessionAlertOpen(false);
+            sets: l.sets.map((s) => ({
+              ...s,
+              weight: convertWeight(s.weight, s.unit || l.unit || "kg", globalUnit),
+              unit: globalUnit,
+            })),
+          }))
+        );
+        setExerciseSearch("");
+        setShowExercisePicker(false);
+        setLastExerciseAlertOpen(false);
+        setDeleteSessionAlertOpen(false);
+      }, 0);
     } else {
-      setEditedLogs([]);
+      setTimeout(() => {
+        setEditedLogs([]);
+      }, 0);
     }
-  }, [activeSession?.id, globalUnit, convertWeight]);
+  }, [activeSession, globalUnit, convertWeight]);
 
   const filteredExercises = useMemo(() => {
     const q = exerciseSearch.toLowerCase();

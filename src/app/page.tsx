@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useWorkouts } from "@/hooks/use-workouts";
-import { useUnit } from "@/contexts/unit-context";
-import { exercises } from "@/lib/exercises";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

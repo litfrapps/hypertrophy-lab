@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +14,8 @@ import {
   ExternalLink,
   RotateCcw,
   Loader2,
-  HelpCircle,
 } from "lucide-react";
-import { ChatMessage, ChatSource } from "@/types";
+import { ChatMessage } from "@/types";
 
 const SUGGESTED_PROMPTS = [
   "What is the optimal rest time between sets for hypertrophy according to Brad Schoenfeld?",
@@ -50,66 +48,72 @@ function AICoachChat() {
     scrollToBottom();
   }, [messages, isLoading]);
 
+  const sendMessage = useCallback(
+    async (textToSend: string) => {
+      const trimmed = textToSend.trim();
+      if (!trimmed || isLoading) return;
+
+      const userMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "user",
+        content: trimmed,
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+      setIsLoading(true);
+
+      try {
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [...messages, userMessage].map((m) => ({
+              role: m.role,
+              content: m.content,
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Chat request failed");
+        }
+
+        const data = await response.json();
+        const botMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: data.content,
+          sources: data.sources || [],
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+
+        setMessages((prev) => [...prev, botMessage]);
+      } catch (err) {
+        console.warn("[AICoach] Chat request failed:", err);
+        const errorMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I encountered an issue generating a response. Please check your connection and try again.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [isLoading, messages]
+  );
+
   // Handle prefilled prompt from URL
   useEffect(() => {
     if (initialPrompt && messages.length === 1) {
-      sendMessage(initialPrompt);
+      setTimeout(() => {
+        sendMessage(initialPrompt);
+      }, 0);
     }
-  }, [initialPrompt]);
-
-  const sendMessage = async (textToSend: string) => {
-    const trimmed = textToSend.trim();
-    if (!trimmed || isLoading) return;
-
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: trimmed,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Chat request failed");
-      }
-
-      const data = await response.json();
-      const botMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.content,
-        sources: data.sources || [],
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
-      const errorMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: "Sorry, I encountered an issue generating a response. Please check your connection and try again.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [initialPrompt, messages.length, sendMessage]);
 
   const handleResetChat = () => {
     setMessages([
@@ -166,7 +170,7 @@ function AICoachChat() {
                 onClick={() => sendMessage(promptText)}
                 className="text-xs text-left p-2 rounded-lg bg-card hover:bg-secondary border border-border/80 hover:border-blue-500/40 text-muted-foreground hover:text-foreground transition-all"
               >
-                "{promptText}"
+                &quot;{promptText}&quot;
               </button>
             ))}
           </div>
@@ -219,7 +223,7 @@ function AICoachChat() {
                       </div>
                       {src.snippet && (
                         <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
-                          "{src.snippet}"
+                          &quot;{src.snippet}&quot;
                         </p>
                       )}
                     </a>

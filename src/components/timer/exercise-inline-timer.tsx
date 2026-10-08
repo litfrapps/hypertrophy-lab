@@ -1,17 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { playChimeSound } from "@/lib/sound";
 import {
-  Timer,
   Play,
   Pause,
-  RotateCcw,
-  Plus,
   CheckCircle2,
   X,
-  Volume2,
 } from "lucide-react";
 
 interface ExerciseInlineTimerProps {
@@ -27,7 +22,6 @@ export function ExerciseInlineTimer({
   isActive,
   onTimerEnd,
   onDismiss,
-  exerciseName,
 }: ExerciseInlineTimerProps) {
   const [timeLeft, setTimeLeft] = useState(durationSeconds);
   const [isRunning, setIsRunning] = useState(isActive);
@@ -36,9 +30,12 @@ export function ExerciseInlineTimer({
 
   // Sync if duration changes or activated
   useEffect(() => {
-    setTimeLeft(durationSeconds);
-    setIsFinished(false);
-    setIsRunning(isActive);
+    const timer = setTimeout(() => {
+      setTimeLeft(durationSeconds);
+      setIsFinished(false);
+      setIsRunning(isActive);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [durationSeconds, isActive]);
 
   useEffect(() => {

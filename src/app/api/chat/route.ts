@@ -174,9 +174,10 @@ export async function POST(req: NextRequest) {
       content: fallbackResponse.content,
       sources: fallbackResponse.sources,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to generate AI response", details: err?.message },
+      { error: "Failed to generate AI response", details: errorMessage },
       { status: 500 }
     );
   }

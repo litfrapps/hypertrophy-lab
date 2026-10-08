@@ -34,7 +34,6 @@ import {
   Award,
   Calendar,
   Dumbbell,
-  Flame,
   Trash2,
   ChevronsUpDown,
   Target,
@@ -89,6 +88,7 @@ function ExerciseThumbnail({
     <div
       className={`w-9 h-9 rounded-md overflow-hidden bg-muted flex-shrink-0 ${className}`}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={alt}
@@ -102,7 +102,6 @@ function ExerciseThumbnail({
 function ProgressContent() {
   const {
     workouts,
-    isLoaded,
     deleteWorkout,
     lifetimeSetCounts,
     topExerciseId,
@@ -138,13 +137,17 @@ function ProgressContent() {
           normalized.includes(e.name.toLowerCase())
       );
       if (match) {
-        setSelectedExerciseId(match.id);
+        setTimeout(() => {
+          setSelectedExerciseId(match.id);
+        }, 0);
         return;
       }
     }
 
     if (!exerciseParam && topExerciseId) {
-      setSelectedExerciseId(topExerciseId);
+      setTimeout(() => {
+        setSelectedExerciseId(topExerciseId);
+      }, 0);
     }
   }, [exerciseParam, topExerciseId]);
 

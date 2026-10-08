@@ -129,7 +129,9 @@ export function useWorkouts() {
   useEffect(() => {
     const cached = loadLocalSessions();
     if (cached.length > 0) {
-      setSessions(cached);
+      setTimeout(() => {
+        setSessions(cached);
+      }, 0);
     }
   }, []);
 
@@ -161,8 +163,10 @@ export function useWorkouts() {
     // If not signed in, operate locally from localStorage
     if (!isSignedIn) {
       const cached = loadLocalSessions();
-      setSessions(cached);
-      setIsLoaded(true);
+      setTimeout(() => {
+        setSessions(cached);
+        setIsLoaded(true);
+      }, 0);
       return;
     }
 

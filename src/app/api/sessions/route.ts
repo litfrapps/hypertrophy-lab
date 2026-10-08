@@ -9,6 +9,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedSupabase } from "@/lib/supabase-server";
 
+interface DbWorkoutSet {
+  set_number: number;
+  reps: number | string;
+  weight: number | string;
+}
+
+interface DbWorkoutLog {
+  id: string;
+  session_id: string;
+  date: string;
+  exercise_id: string;
+  exercise_name: string;
+  unit: string;
+  notes?: string | null;
+  workout_sets?: DbWorkoutSet[];
+}
+
+interface DbWorkoutSession {
+  id: string;
+  date: string;
+  duration_seconds: number;
+  notes?: string | null;
+  workout_logs?: DbWorkoutLog[];
+}
+
+interface InputWorkoutSet {
+  setNumber: number;
+  reps: number;
+  weight: number;
+}
+
 // ──────────────────────────────────────────
 // GET /api/sessions
 // ──────────────────────────────────────────
@@ -53,12 +84,12 @@ export async function GET() {
   }
 
   // Transform snake_case DB rows → camelCase TypeScript shapes
-  const transformed = (sessions ?? []).map((s: any) => ({
+  const transformed = (sessions ?? []).map((s: DbWorkoutSession) => ({
     id: s.id,
     date: s.date,
     durationSeconds: s.duration_seconds,
     notes: s.notes,
-    logs: (s.workout_logs ?? []).map((l: any) => ({
+    logs: (s.workout_logs ?? []).map((l: DbWorkoutLog) => ({
       id: l.id,
       sessionId: l.session_id,
       date: l.date,
@@ -67,8 +98,8 @@ export async function GET() {
       unit: l.unit,
       notes: l.notes,
       sets: (l.workout_sets ?? [])
-        .sort((a: any, b: any) => a.set_number - b.set_number)
-        .map((st: any) => ({
+        .sort((a: DbWorkoutSet, b: DbWorkoutSet) => a.set_number - b.set_number)
+        .map((st: DbWorkoutSet) => ({
           setNumber: st.set_number,
           reps: Number(st.reps),
           weight: Number(st.weight),
@@ -128,7 +159,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Insert sets for this log
-    const setsToInsert = (log.sets ?? []).map((s: any) => ({
+    const setsToInsert = (log.sets ?? []).map((s: InputWorkoutSet) => ({
       log_id: log.id,
       set_number: s.setNumber,
       reps: s.reps,

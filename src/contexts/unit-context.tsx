@@ -70,7 +70,9 @@ export function UnitProvider({ children }: { children: ReactNode }) {
       try {
         const saved = localStorage.getItem(UNIT_STORAGE_KEY);
         if (saved === "kg" || saved === "lbs") {
-          setGlobalUnitState(saved);
+          setTimeout(() => {
+            setGlobalUnitState(saved);
+          }, 0);
         }
       } catch (err) {
         console.warn("[UnitContext] Failed to read localStorage:", err);

@@ -73,7 +73,7 @@ export async function DELETE(
     .eq("session_id", id)
     .eq("user_id", userId);
 
-  const logIds = (logs ?? []).map((l: any) => l.id);
+  const logIds = (logs ?? []).map((l: { id: string }) => l.id);
 
   if (logIds.length > 0) {
     // Delete sets

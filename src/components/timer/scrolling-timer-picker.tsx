@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Check, Timer, Sparkles } from "lucide-react";
+import { X, Check, Timer } from "lucide-react";
 
 interface ScrollingTimerPickerProps {
   isOpen: boolean;

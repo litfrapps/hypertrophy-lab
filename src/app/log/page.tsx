@@ -7,7 +7,7 @@ import { useWorkouts } from "@/hooks/use-workouts";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
 import { useWorkoutContext } from "@/context/workout-context";
-import { Exercise, WorkoutSet, WorkoutLog, WorkoutSession } from "@/types";
+import { Exercise, WorkoutLog, WorkoutSession } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -51,14 +51,11 @@ import {
   X,
   Flame,
   Award,
-  Sparkles,
-  ArrowRight,
   TrendingUp,
   Calendar as CalendarIcon,
   Edit2,
   ChevronRight,
   AlertTriangle,
-  Layers,
   Ban,
 } from "lucide-react";
 import Link from "next/link";
@@ -390,7 +387,6 @@ function WorkoutSessionManager() {
     deleteSession,
     updateSessionDateTime,
     globalUnit,
-    convertWeight,
   } = useWorkouts();
 
   const {
@@ -406,9 +402,6 @@ function WorkoutSessionManager() {
 
   const {
     sessionExercises,
-    liveVolume,
-    totalPlannedSets,
-    totalCompletedSets,
     addSetToExercise,
     removeSetFromExercise,
     updateSetValues,
@@ -433,9 +426,62 @@ function WorkoutSessionManager() {
   const [routinePickerMuscle, setRoutinePickerMuscle] = useState("");
   const [deleteRoutineId, setDeleteRoutineId] = useState<string | null>(null);
 
+  // ── Exercise picker modal ──────────────────────────────────────────────────
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickerMuscle, setPickerMuscle] = useState("");
+
+  const filteredPickerExercises = useMemo(() =>
+    exercises.filter((e) => {
+      const matchSearch = !pickerSearch ||
+        e.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+        e.primaryMuscle.toLowerCase().includes(pickerSearch.toLowerCase()) ||
+        e.secondaryMuscle.toLowerCase().includes(pickerSearch.toLowerCase());
+      const matchMuscle = !pickerMuscle ||
+        e.primaryMuscle === pickerMuscle ||
+        e.secondaryMuscle === pickerMuscle;
+      return matchSearch && matchMuscle;
+    }),
+  [pickerSearch, pickerMuscle]);
+
+  // ── Session completion summary ─────────────────────────────────────────────
+  const [finishedSummary, setFinishedSummary] = useState<{
+    durationText: string;
+    durationSeconds: number;
+    totalSets: number;
+    totalVolume: number;
+    sessionDate: string;
+    exerciseCount: number;
+    exercisesSummary: { name: string; setsCount: number; maxWeight: number }[];
+  } | null>(null);
+
+  // ── Session lifecycle ──────────────────────────────────────────────────────
+  const startNewSession = (initialExercises: Exercise[] = []) => {
+    setFinishedSummary(null);
+    if (initialExercises.length > 0) {
+      ctxStartSession(initialExercises);
+      // Override default sets using last-entry history via WorkoutContext
+      setSessionExercises(
+        initialExercises.map((ex) => ({
+          id: crypto.randomUUID(),
+          exercise: ex,
+          restTimerSeconds: 120,
+          timerActive: false,
+          timerKey: 0,
+          sets: buildInitialSets(ex),
+        }))
+      );
+    } else {
+      ctxStartSession([]);
+      setPickerOpen(true);
+    }
+  };
+
   // Hydrate from localStorage after mount (avoids SSR mismatch)
   useEffect(() => {
-    setSavedRoutines(loadRoutines());
+    setTimeout(() => {
+      setSavedRoutines(loadRoutines());
+    }, 0);
   }, []);
 
   const persistRoutines = useCallback((routines: SavedRoutine[]) => {
@@ -510,24 +556,6 @@ function WorkoutSessionManager() {
     }),
   [routinePickerSearch, routinePickerMuscle]);
 
-  // ── Exercise picker modal ──────────────────────────────────────────────────
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [pickerSearch, setPickerSearch] = useState("");
-  const [pickerMuscle, setPickerMuscle] = useState("");
-
-  const filteredPickerExercises = useMemo(() =>
-    exercises.filter((e) => {
-      const matchSearch = !pickerSearch ||
-        e.name.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-        e.primaryMuscle.toLowerCase().includes(pickerSearch.toLowerCase()) ||
-        e.secondaryMuscle.toLowerCase().includes(pickerSearch.toLowerCase());
-      const matchMuscle = !pickerMuscle ||
-        e.primaryMuscle === pickerMuscle ||
-        e.secondaryMuscle === pickerMuscle;
-      return matchSearch && matchMuscle;
-    }),
-  [pickerSearch, pickerMuscle]);
-
   // ── Rest timer picker ──────────────────────────────────────────────────────
   const [timerPickerExerciseId, setTimerPickerExerciseId] = useState<string | null>(null);
   const activePickerExercise = sessionExercises.find((e) => e.id === timerPickerExerciseId);
@@ -546,48 +574,18 @@ function WorkoutSessionManager() {
   const [pendingExercise, setPendingExercise] = useState<Exercise | null>(null);
   const [mismatchContext, setMismatchContext] = useState<"session" | "routine">("session");
 
-  // ── Session completion summary ─────────────────────────────────────────────
-  const [finishedSummary, setFinishedSummary] = useState<{
-    durationText: string;
-    durationSeconds: number;
-    totalSets: number;
-    totalVolume: number;
-    sessionDate: string;
-    exerciseCount: number;
-    exercisesSummary: { name: string; setsCount: number; maxWeight: number }[];
-  } | null>(null);
-
   // Pre-load exercise from URL ?exercise=
   useEffect(() => {
     if (preselectedExerciseId && !sessionActive) {
       const ex = exercises.find((e) => e.id === preselectedExerciseId);
-      if (ex) startNewSession([ex]);
+      if (ex) {
+        setTimeout(() => {
+          startNewSession([ex]);
+        }, 0);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preselectedExerciseId]);
-
-  // ── Session lifecycle ──────────────────────────────────────────────────────
-
-  const startNewSession = (initialExercises: Exercise[] = []) => {
-    setFinishedSummary(null);
-    if (initialExercises.length > 0) {
-      ctxStartSession(initialExercises);
-      // Override default sets using last-entry history via WorkoutContext
-      setSessionExercises(
-        initialExercises.map((ex) => ({
-          id: crypto.randomUUID(),
-          exercise: ex,
-          restTimerSeconds: 120,
-          timerActive: false,
-          timerKey: 0,
-          sets: buildInitialSets(ex),
-        }))
-      );
-    } else {
-      ctxStartSession([]);
-      setPickerOpen(true);
-    }
-  };
 
   // ── Session finish ─────────────────────────────────────────────────────────
 
@@ -838,7 +836,6 @@ function WorkoutSessionManager() {
           <div className="space-y-3">
             {sessionExercises.map((item, exIdx) => {
               const primaryColors = muscleGroupColors[item.exercise.primaryMuscle];
-              const secondaryColors = muscleGroupColors[item.exercise.secondaryMuscle];
 
               return (
                 <div

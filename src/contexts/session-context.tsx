@@ -10,7 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { Exercise, WorkoutSet } from "@/types";
-import { useUnit, UNIT_STORAGE_KEY } from "@/contexts/unit-context";
+import { useUnit } from "@/contexts/unit-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,7 +107,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } else {
       setExercises([]);
     }
-  }, []);
+  }, [globalUnit]);
 
   const cancelSession = useCallback(() => {
     setIsActive(false);
