@@ -297,10 +297,6 @@ export default function ExercisesPage() {
         <div className="space-y-3 divide-y divide-white/5">
           {visibleMuscleGroups.map((muscle) => {
             const exs = groupedExercises[muscle] || [];
-            const colors = muscleGroupColors[muscle] || {
-              bg: "bg-gray-500/20",
-              text: "text-gray-400",
-            };
             const isExpanded = expandedGroups[muscle] ?? true;
 
             return (
@@ -316,12 +312,6 @@ export default function ExercisesPage() {
                   className="w-full flex items-center justify-between py-1.5 px-0.5 text-left select-none cursor-pointer group hover:opacity-90 transition-opacity"
                 >
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`w-2 h-2 rounded-full ${colors.text.replace(
-                        "text-",
-                        "bg-"
-                      )} ring-1 ring-white/10`}
-                    />
                     <h2 className="text-sm sm:text-base font-bold tracking-tight text-white group-hover:text-primary transition-colors">
                       {muscle}
                     </h2>
