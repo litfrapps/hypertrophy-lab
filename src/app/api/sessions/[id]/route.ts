@@ -9,7 +9,7 @@ import { getAuthenticatedSupabase } from "@/lib/supabase-server";
 
 // ──────────────────────────────────────────
 // PATCH /api/sessions/[id]
-// Body: { date: ISO string }
+// Body: { date?: ISO string, durationSeconds?: number, logs?: WorkoutLog[] }
 // ──────────────────────────────────────────
 export async function PATCH(
   req: NextRequest,
@@ -23,29 +23,107 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { date } = body;
+  const { date, logs, durationSeconds } = body;
 
-  // Update the session date
-  const { error: sessErr } = await supabase
-    .from("workout_sessions")
-    .update({ date })
-    .eq("id", id)
-    .eq("user_id", userId);
+  // If logs array is explicitly passed and is empty, delete the whole session
+  if (Array.isArray(logs) && logs.length === 0) {
+    const { data: dbLogs } = await supabase
+      .from("workout_logs")
+      .select("id")
+      .eq("session_id", id)
+      .eq("user_id", userId);
 
-  if (sessErr) {
-    console.error("[PATCH /api/sessions/:id]", sessErr);
-    return NextResponse.json({ error: sessErr.message }, { status: 500 });
+    const logIds = (dbLogs ?? []).map((l: { id: string }) => l.id);
+    if (logIds.length > 0) {
+      await supabase.from("workout_sets").delete().in("log_id", logIds);
+      await supabase.from("workout_logs").delete().eq("session_id", id).eq("user_id", userId);
+    }
+    await supabase.from("workout_sessions").delete().eq("id", id).eq("user_id", userId);
+    return NextResponse.json({ success: true, deleted: true });
   }
 
-  // Also propagate date to all logs in this session
-  const { error: logErr } = await supabase
-    .from("workout_logs")
-    .update({ date })
-    .eq("session_id", id)
-    .eq("user_id", userId);
+  // Update session record if date or durationSeconds provided
+  const sessionUpdate: Record<string, any> = {};
+  if (date) sessionUpdate.date = date;
+  if (durationSeconds !== undefined) sessionUpdate.duration_seconds = durationSeconds;
 
-  if (logErr) {
-    console.error("[PATCH /api/sessions/:id] log date update:", logErr);
+  if (Object.keys(sessionUpdate).length > 0) {
+    const { error: sessErr } = await supabase
+      .from("workout_sessions")
+      .update(sessionUpdate)
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (sessErr) {
+      console.error("[PATCH /api/sessions/:id]", sessErr);
+      return NextResponse.json({ error: sessErr.message }, { status: 500 });
+    }
+  }
+
+  // If logs are provided (e.g. from inline editing / removing exercises from session)
+  if (Array.isArray(logs)) {
+    // 1. Find existing logs in DB for this session
+    const { data: existingLogs } = await supabase
+      .from("workout_logs")
+      .select("id")
+      .eq("session_id", id)
+      .eq("user_id", userId);
+
+    const existingLogIds = (existingLogs ?? []).map((l: { id: string }) => l.id);
+    const incomingLogIds = new Set(logs.map((l: any) => l.id));
+
+    // Determine which logs were deleted
+    const toDeleteIds = existingLogIds.filter((lid) => !incomingLogIds.has(lid));
+    if (toDeleteIds.length > 0) {
+      await supabase.from("workout_sets").delete().in("log_id", toDeleteIds);
+      await supabase.from("workout_logs").delete().in("id", toDeleteIds).eq("user_id", userId);
+    }
+
+    // 2. Upsert incoming logs and replace their sets
+    for (const log of logs) {
+      const { error: upsertErr } = await supabase.from("workout_logs").upsert({
+        id: log.id,
+        session_id: id,
+        user_id: userId,
+        date: log.date || date,
+        exercise_id: log.exerciseId,
+        exercise_name: log.exerciseName,
+        unit: log.unit || "kg",
+        notes: log.notes ?? null,
+      });
+
+      if (upsertErr) {
+        console.error("[PATCH /api/sessions/:id] log upsert:", upsertErr);
+      }
+
+      // Replace sets for this log
+      await supabase.from("workout_sets").delete().eq("log_id", log.id);
+
+      const setsToInsert = (log.sets ?? []).map((s: any, idx: number) => ({
+        log_id: log.id,
+        set_number: s.setNumber || idx + 1,
+        reps: Number(s.reps),
+        weight: Number(s.weight),
+      }));
+
+      if (setsToInsert.length > 0) {
+        const { error: setsErr } = await supabase.from("workout_sets").insert(setsToInsert);
+        if (setsErr) {
+          console.error("[PATCH /api/sessions/:id] sets insert:", setsErr);
+        }
+      }
+    }
+  } else if (date) {
+    // If only date was provided without logs, propagate date to all logs
+    const { error: logErr } = await supabase
+      .from("workout_logs")
+      .update({ date })
+      .eq("session_id", id)
+      .eq("user_id", userId);
+
+    if (logErr) {
+      console.error("[PATCH /api/sessions/:id] log date update:", logErr);
+    }
   }
 
   return NextResponse.json({ success: true });

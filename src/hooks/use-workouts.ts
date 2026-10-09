@@ -83,6 +83,9 @@ function loadLocalSessions(): WorkoutSession[] {
           logs: groupLogs,
         }));
         saveLocalSessions(convertedSessions);
+        try {
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        } catch {}
         return convertedSessions;
       }
     }
@@ -410,16 +413,15 @@ export function useWorkouts() {
   // ──────────────────────────────────────────
   const deleteWorkout = useCallback(async (logId: string) => {
     // 1. Remove log from state and localStorage immediately
-    setSessions((prev) => {
-      const updated = prev
-        .map((s) => ({
-          ...s,
-          logs: s.logs.filter((l) => l.id !== logId),
-        }))
-        .filter((s) => s.logs.length > 0);
-      saveLocalSessions(updated);
-      return updated;
-    });
+    const current = loadLocalSessions();
+    const updated = current
+      .map((s) => ({
+        ...s,
+        logs: s.logs.filter((l) => l.id !== logId),
+      }))
+      .filter((s) => s.logs.length > 0);
+    saveLocalSessions(updated);
+    setSessions(updated);
 
     // 2. Try to sync to server
     try {

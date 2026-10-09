@@ -81,7 +81,7 @@ export default function DashboardPage() {
   );
 
   // Compute Metrics
-  const totalWorkouts = workouts.length;
+  const totalWorkouts = displaySessions.length;
   const totalExercises = new Set(workouts.map((w) => w.exerciseId)).size;
   const totalVolume = workouts.reduce(
     (sum, w) =>
@@ -101,9 +101,130 @@ export default function DashboardPage() {
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0, 0, 0, 0);
-  const thisWeekWorkouts = workouts.filter(
-    (w) => new Date(w.date) >= weekStart
+  const thisWeekWorkouts = displaySessions.filter(
+    (s) => new Date(s.date) >= weekStart
   );
+
+  // Compute Volume Progress & Trajectory (4-week trend)
+  const progressStats = useMemo(() => {
+    if (!workouts || workouts.length === 0) {
+      return {
+        hasData: false,
+        overloadBadgeText: "NO DATA",
+        activeMesoText: "No active mesocycle",
+        polylinePoints: "0,95 100,95 200,95 300,95",
+        polygonPoints: "0,95 100,95 200,95 300,95 300,95 0,95",
+        lastY: 95,
+      };
+    }
+
+    const now = new Date();
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
+    currentWeekStart.setHours(0, 0, 0, 0);
+
+    const weekMs = 7 * 24 * 60 * 60 * 1000;
+    const week0Start = currentWeekStart.getTime() - 3 * weekMs;
+    const week1Start = currentWeekStart.getTime() - 2 * weekMs;
+    const week2Start = currentWeekStart.getTime() - 1 * weekMs;
+    const week3Start = currentWeekStart.getTime();
+
+    const getLogVol = (w: WorkoutLog) =>
+      w.sets.reduce(
+        (sum, s) =>
+          sum +
+          s.reps *
+            convertWeight(s.weight, s.unit || w.unit || "kg", globalUnit),
+        0
+      );
+
+    const v0 = workouts
+      .filter((w) => {
+        const t = new Date(w.date).getTime();
+        return t >= week0Start && t < week1Start;
+      })
+      .reduce((acc, w) => acc + getLogVol(w), 0);
+
+    const v1 = workouts
+      .filter((w) => {
+        const t = new Date(w.date).getTime();
+        return t >= week1Start && t < week2Start;
+      })
+      .reduce((acc, w) => acc + getLogVol(w), 0);
+
+    const v2 = workouts
+      .filter((w) => {
+        const t = new Date(w.date).getTime();
+        return t >= week2Start && t < week3Start;
+      })
+      .reduce((acc, w) => acc + getLogVol(w), 0);
+
+    const v3 = workouts
+      .filter((w) => {
+        const t = new Date(w.date).getTime();
+        return t >= week3Start;
+      })
+      .reduce((acc, w) => acc + getLogVol(w), 0);
+
+    let vols = [Math.round(v0), Math.round(v1), Math.round(v2), Math.round(v3)];
+    let hasAny = vols.some((v) => v > 0);
+
+    if (!hasAny && workouts.length > 0) {
+      const sorted = [...workouts].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      const chunkSize = Math.max(1, Math.ceil(sorted.length / 4));
+      const buckets = [0, 0, 0, 0];
+      sorted.forEach((w, idx) => {
+        const b = Math.min(3, Math.floor(idx / chunkSize));
+        buckets[b] += getLogVol(w);
+      });
+      vols = buckets.map((v) => Math.round(v));
+      hasAny = vols.some((v) => v > 0);
+    }
+
+    if (!hasAny) {
+      return {
+        hasData: false,
+        overloadBadgeText: "NO DATA",
+        activeMesoText: "No active mesocycle",
+        polylinePoints: "0,95 100,95 200,95 300,95",
+        polygonPoints: "0,95 100,95 200,95 300,95 300,95 0,95",
+        lastY: 95,
+      };
+    }
+
+    let overloadBadgeText = "ACTIVE TRACKING";
+    const cur = vols[3];
+    const prev = vols[2] > 0 ? vols[2] : vols[1] > 0 ? vols[1] : vols[0];
+    if (prev > 0 && cur > 0) {
+      const pct = Math.round(((cur - prev) / prev) * 1000) / 10;
+      overloadBadgeText = `${pct >= 0 ? `+${pct}%` : `${pct}%`} OVERLOAD`;
+    } else if (cur > 0 && prev === 0) {
+      overloadBadgeText = "BASELINE MESO";
+    }
+
+    const maxV = Math.max(...vols, 1);
+    const y0 = Math.round(90 - (vols[0] / maxV) * 75);
+    const y1 = Math.round(90 - (vols[1] / maxV) * 75);
+    const y2 = Math.round(90 - (vols[2] / maxV) * 75);
+    const y3 = Math.round(90 - (vols[3] / maxV) * 75);
+
+    const polylinePoints = `0,${y0} 100,${y1} 200,${y2} 300,${y3}`;
+    const polygonPoints = `0,${y0} 100,${y1} 200,${y2} 300,${y3} 300,95 0,95`;
+
+    const activeWeeks = vols.filter((v) => v > 0).length;
+    const activeMesoText = `${activeWeeks > 0 ? activeWeeks : 1}-Week Block`;
+
+    return {
+      hasData: true,
+      overloadBadgeText,
+      activeMesoText,
+      polylinePoints,
+      polygonPoints,
+      lastY: y3,
+    };
+  }, [workouts, globalUnit, convertWeight]);
 
   const handleEditSave = useCallback(
     async (updated: WorkoutSession) => {
@@ -213,7 +334,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-end justify-between mt-1 pt-0.5">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
-                  {isLoaded ? totalWorkouts || 1 : "—"}
+                  {isLoaded ? totalWorkouts : "—"}
                 </span>
                 <Link
                   href="/progress"
@@ -237,7 +358,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-end justify-between mt-1 pt-0.5">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
-                  {isLoaded ? thisWeekWorkouts.length || 1 : "—"}
+                  {isLoaded ? thisWeekWorkouts.length : "—"}
                 </span>
                 <Link
                   href="/log"
@@ -261,7 +382,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-end justify-between mt-1 pt-0.5">
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
-                  {isLoaded ? totalExercises || 1 : "—"}
+                  {isLoaded ? totalExercises : "—"}
                 </span>
                 <Link
                   href="/exercises"
@@ -287,11 +408,9 @@ export default function DashboardPage() {
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
                     {isLoaded
-                      ? roundedVolume > 0
-                        ? roundedVolume > 1000
-                          ? `${(roundedVolume / 1000).toFixed(1)}k`
-                          : roundedVolume.toLocaleString()
-                        : "480"
+                      ? roundedVolume > 1000
+                        ? `${(roundedVolume / 1000).toFixed(1)}k`
+                        : roundedVolume.toLocaleString()
                       : "—"}
                   </span>
                   <span className="text-xs sm:text-sm font-normal text-[#888890]">
@@ -663,8 +782,14 @@ export default function DashboardPage() {
                   RECENT PROGRESS
                 </h3>
               </div>
-              <span className="font-display text-[8.5px] font-bold text-[#FF1E27] bg-[#2B0A0C] border border-[#FF1E27]/30 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                +12.4% OVERLOAD
+              <span
+                className={`font-display text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                  !progressStats.hasData
+                    ? "text-[#888890] bg-[#1a1a1f] border border-[#222226]"
+                    : "text-[#FF1E27] bg-[#2B0A0C] border border-[#FF1E27]/30"
+                }`}
+              >
+                {progressStats.overloadBadgeText}
               </span>
             </div>
 
@@ -673,7 +798,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="text-[#888890] text-[11px]">Volume Trajectory</span>
                 <span className="font-mono text-white text-xs font-bold">
-                  {roundedVolume > 0 ? roundedVolume.toLocaleString() : "480"} {globalUnit}
+                  {isLoaded ? roundedVolume.toLocaleString() : "—"} {globalUnit}
                 </span>
               </div>
 
@@ -696,25 +821,52 @@ export default function DashboardPage() {
                   <line x1="0" y1="60" x2="300" y2="60" stroke="#222226" strokeDasharray="3 3" />
                   <line x1="0" y1="95" x2="300" y2="95" stroke="#222226" />
 
-                  {/* Area fill */}
-                  <polygon
-                    points="0,85 50,75 100,55 150,60 200,35 250,25 300,15 300,95 0,95"
-                    fill="url(#crimsonGradient)"
-                  />
+                  {progressStats.hasData ? (
+                    <>
+                      {/* Area fill */}
+                      <polygon
+                        points={progressStats.polygonPoints}
+                        fill="url(#crimsonGradient)"
+                      />
 
-                  {/* Crimson Stroke Line */}
-                  <polyline
-                    fill="none"
-                    stroke="#FF1E27"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points="0,85 50,75 100,55 150,60 200,35 250,25 300,15"
-                  />
+                      {/* Crimson Stroke Line */}
+                      <polyline
+                        fill="none"
+                        stroke="#FF1E27"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={progressStats.polylinePoints}
+                      />
 
-                  {/* Dot on final point */}
-                  <circle cx="300" cy="15" r="4" fill="#FF1E27" />
-                  <circle cx="300" cy="15" r="7" fill="#FF1E27" fillOpacity="0.3" />
+                      {/* Dot on final point */}
+                      <circle cx="300" cy={progressStats.lastY} r="4" fill="#FF1E27" />
+                      <circle cx="300" cy={progressStats.lastY} r="7" fill="#FF1E27" fillOpacity="0.3" />
+                    </>
+                  ) : (
+                    <>
+                      {/* Flatline baseline when no data */}
+                      <line
+                        x1="0"
+                        y1="95"
+                        x2="300"
+                        y2="95"
+                        stroke="#FF1E27"
+                        strokeWidth="1.5"
+                        opacity="0.4"
+                      />
+                      <text
+                        x="150"
+                        y="58"
+                        textAnchor="middle"
+                        fill="#888890"
+                        fontSize="10"
+                        fontFamily="sans-serif"
+                      >
+                        No workout volume logged yet
+                      </text>
+                    </>
+                  )}
                 </svg>
               </div>
 
@@ -724,14 +876,16 @@ export default function DashboardPage() {
                 <span>Wk 2</span>
                 <span>Wk 3</span>
                 <span>Wk 4</span>
-                <span className="text-[#FF1E27] font-bold">Current</span>
+                <span className={progressStats.hasData ? "text-[#FF1E27] font-bold" : ""}>Current</span>
               </div>
 
               {/* Summary Bottom Info */}
               <div className="mt-3 pt-2 border-t border-[#222226] flex items-center justify-between">
                 <div>
                   <p className="text-[9px] text-[#888890]">Active Meso</p>
-                  <p className="text-[11px] font-bold text-white">4-Week Block</p>
+                  <p className="text-[11px] font-bold text-white">
+                    {progressStats.activeMesoText}
+                  </p>
                 </div>
                 <Link
                   href="/progress"
