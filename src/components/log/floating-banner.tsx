@@ -43,12 +43,12 @@ export function FloatingBanner({
   return (
     <Link
       href="/log"
-      className="lg:hidden fixed bottom-[68px] left-3 right-3 z-40"
+      className="lg:hidden fixed bottom-[60px] left-3 right-3 z-40"
       aria-label="Return to active workout session"
     >
       <div
-        className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-card/95 backdrop-blur-md
-                   border border-emerald-500/40 shadow-xl shadow-emerald-500/10
+        className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-card/95 backdrop-blur-md
+                   border border-emerald-500/40 shadow-lg shadow-emerald-500/10
                    hover:border-emerald-500/60 transition-all animate-fade-in-up"
         role="status"
         aria-live="polite"

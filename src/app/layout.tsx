@@ -1,17 +1,25 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Orbitron, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/navbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClientProviders } from "@/components/layout/client-providers";
 import { WorkoutProvider } from "@/context/workout-context";
 
-const inter = Inter({
+const orbitron = Orbitron({
+  variable: "--font-display",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -35,8 +43,9 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
-  themeColor: "#3b82f6",
+export const viewport: Viewport = {
+  themeColor: "#08080a",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -45,8 +54,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+    <html
+      lang="en"
+      className={`${plusJakartaSans.variable} ${orbitron.variable} dark`}
+      suppressHydrationWarning
+    >
+      <body className="min-h-screen bg-[#08080a] text-white font-sans antialiased selection:bg-[#ff1e27] selection:text-white">
         <ClerkProvider appearance={{ theme: shadcn }}>
           <TooltipProvider>
             <ClientProviders>
@@ -59,8 +72,8 @@ export default function RootLayout({
               <WorkoutProvider>
                 <Navbar />
                 {/* Main content area — offset for desktop sidebar and mobile top bar */}
-                <main className="lg:ml-64 pt-16 lg:pt-0 pb-20 lg:pb-0 min-h-screen">
-                  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+                <main className="lg:ml-60 pt-14 lg:pt-0 pb-16 lg:pb-0 min-h-screen">
+                  <div className="mx-auto max-w-7xl px-3 sm:px-5 lg:px-7 py-3.5 sm:py-4.5 lg:py-6">
                     {children}
                   </div>
                 </main>
