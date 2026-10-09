@@ -509,14 +509,14 @@ function WorkoutSessionManager() {
   if (finishedSummary) {
     return (
       <div className="max-w-xl mx-auto space-y-4 py-4 px-2 animate-fade-in-up">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/15 via-blue-500/10 to-cyan-500/15 border border-green-500/30 p-5 text-center space-y-2.5">
-          <div className="w-12 h-12 rounded-full bg-green-500/20 border border-green-500/40 flex items-center justify-center mx-auto text-green-400">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/15 via-red-950/20 to-emerald-500/10 border border-emerald-500/30 p-5 text-center space-y-2.5">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
             <CheckCircle2 className="w-7 h-7" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Session Completed!
           </h1>
-          <div className="text-xs text-blue-400 font-mono flex items-center justify-center gap-1.5">
+          <div className="text-xs text-primary font-mono flex items-center justify-center gap-1.5">
             <CalendarIcon className="w-3.5 h-3.5" />
             <span>{formatSessionDateTime(finishedSummary.sessionDate)}</span>
           </div>
@@ -529,7 +529,7 @@ function WorkoutSessionManager() {
               {
                 label: "Duration",
                 value: finishedSummary.durationText,
-                color: "text-blue-400",
+                color: "text-primary",
               },
               {
                 label: "Sets Done",
@@ -570,7 +570,7 @@ function WorkoutSessionManager() {
                     {ex.setsCount} working sets
                   </div>
                 </div>
-                <div className="text-right font-mono font-bold text-blue-400">
+                <div className="text-right font-mono font-bold text-primary">
                   Top: {ex.maxWeight} {globalUnit}
                 </div>
               </div>
@@ -580,7 +580,7 @@ function WorkoutSessionManager() {
 
         <div className="flex gap-2">
           <Link href="/progress" className="flex-1">
-            <Button className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs">
+            <Button className="w-full h-10 bg-primary hover:bg-primary/90 text-white font-semibold text-xs shadow-sm shadow-primary/20">
               <TrendingUp className="w-3.5 h-3.5 mr-1.5" /> View Progress Graph
             </Button>
           </Link>
@@ -601,7 +601,7 @@ function WorkoutSessionManager() {
   // ─────────────────────────────────────────────────────────────────────────
   if (sessionActive) {
     return (
-      <div className="space-y-3.5 max-w-3xl mx-auto pb-24 px-1 sm:px-0">
+      <div className="w-full space-y-3.5 max-w-3xl mx-auto pb-24">
         {/* Session control bar — sub-component */}
         <SessionHeader
           elapsedSeconds={sessionElapsedSeconds}
@@ -614,7 +614,7 @@ function WorkoutSessionManager() {
         {sessionExercises.length === 0 ? (
           <Card className="border-border/60 bg-card border-dashed">
             <CardContent className="py-12 text-center space-y-2.5">
-              <div className="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto text-blue-400">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center mx-auto text-primary">
                 <Dumbbell className="w-5 h-5" />
               </div>
               <h2 className="text-base font-bold">Your session is empty</h2>
@@ -624,7 +624,7 @@ function WorkoutSessionManager() {
               <Button
                 size="sm"
                 onClick={() => setPickerOpen(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs h-9 px-4"
+                className="bg-primary hover:bg-primary/90 text-white font-semibold text-xs h-9 px-4 shadow-sm shadow-primary/20"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Add Exercise
               </Button>
@@ -677,10 +677,10 @@ function WorkoutSessionManager() {
                       <button
                         type="button"
                         onClick={() => setTimerPickerExerciseId(item.id)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 hover:bg-secondary border border-border/60 hover:border-blue-500/40 text-[11px] font-medium text-foreground transition-all"
+                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 hover:bg-secondary border border-border/60 hover:border-primary/40 text-[11px] font-medium text-foreground transition-all"
                         title="Customize rest timer"
                       >
-                        <Timer className="w-3 h-3 text-blue-400" />
+                        <Timer className="w-3 h-3 text-primary" />
                         <span className="font-mono font-semibold">
                           {formatIntervalLabel(item.restTimerSeconds)}
                         </span>
@@ -690,7 +690,7 @@ function WorkoutSessionManager() {
                         <button
                           type="button"
                           onClick={() => startRestForExercise(item.id)}
-                          className="px-1.5 py-1 rounded-md bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 text-[10px] font-semibold transition-colors"
+                          className="px-1.5 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold transition-colors"
                           title="Start rest timer manually"
                         >
                           Rest
@@ -746,7 +746,7 @@ function WorkoutSessionManager() {
                       <button
                         type="button"
                         onClick={() => addSetToExercise(item.id)}
-                        className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 py-1"
+                        className="text-primary hover:text-primary/80 font-semibold flex items-center gap-1 py-1"
                       >
                         <Plus className="w-3 h-3" /> Add Set
                       </button>
@@ -768,7 +768,7 @@ function WorkoutSessionManager() {
               <Button
                 onClick={() => setPickerOpen(true)}
                 variant="outline"
-                className="flex-1 h-12 py-3 border-blue-500/30 text-blue-400 hover:bg-blue-600/10 font-semibold text-xs sm:text-sm rounded-xl"
+                className="flex-1 h-12 py-3 border-primary/30 text-primary hover:bg-primary/10 font-semibold text-xs sm:text-sm rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-1.5" /> Add Exercise
               </Button>
@@ -842,7 +842,7 @@ function WorkoutSessionManager() {
               <Button
                 type="button"
                 onClick={() => setEmptySessionAlertOpen(false)}
-                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-lg font-medium"
+                className="mt-2 bg-primary hover:bg-primary/90 text-white text-xs h-9 px-4 rounded-lg font-medium shadow-sm shadow-primary/20"
               >
                 Continue Workout
               </Button>
@@ -864,7 +864,7 @@ function WorkoutSessionManager() {
               <Button
                 type="button"
                 onClick={() => setInvalidSetAlertOpen(false)}
-                className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-9 px-4 rounded-lg font-medium"
+                className="mt-2 bg-primary hover:bg-primary/90 text-white text-xs h-9 px-4 rounded-lg font-medium shadow-sm shadow-primary/20"
               >
                 Got it
               </Button>
@@ -963,7 +963,7 @@ function WorkoutSessionManager() {
                 <Button
                   size="sm"
                   onClick={saveActiveDate}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-white text-xs font-semibold shadow-sm shadow-primary/20"
                 >
                   Apply
                 </Button>
@@ -1009,7 +1009,7 @@ function WorkoutSessionManager() {
                     variant="secondary"
                     className={`cursor-pointer text-[10px] py-0.5 px-2 ${
                       !pickerMuscle
-                        ? "bg-blue-500/20 text-blue-400"
+                        ? "bg-primary text-white font-semibold"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     }`}
                     onClick={() => setPickerMuscle("")}
@@ -1048,10 +1048,10 @@ function WorkoutSessionManager() {
                     >
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                          <Dumbbell className="w-4 h-4 text-muted-foreground group-hover:text-blue-400" />
+                          <Dumbbell className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
                         </div>
                         <div>
-                          <div className="font-semibold text-xs group-hover:text-blue-400 transition-colors">
+                          <div className="font-semibold text-xs group-hover:text-primary transition-colors">
                             {ex.name}
                           </div>
                           <div className="flex gap-1.5 mt-0.5 text-[10px]">
@@ -1062,7 +1062,7 @@ function WorkoutSessionManager() {
                           </div>
                         </div>
                       </div>
-                      <span className="text-[11px] text-blue-400 font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[11px] text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                         + Add
                       </span>
                     </button>
@@ -1080,17 +1080,19 @@ function WorkoutSessionManager() {
   // RENDER: Pre-Session Landing (Start + Routines + Calendar)
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-2xl mx-auto py-2 px-1 sm:px-0">
+    <div className="w-full space-y-5 max-w-2xl mx-auto py-2">
       {/* Header banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-600/15 via-cyan-600/10 to-indigo-600/15 border border-blue-500/20 px-4 py-3 sm:px-5 sm:py-3.5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Flame className="w-4 h-4 text-blue-400 shrink-0" />
+      <div className="w-full relative overflow-hidden rounded-xl bg-gradient-to-r from-red-950/40 via-[#16161a] to-red-950/20 border border-red-900/30 p-2.5 sm:p-3">
+        <div className="flex items-center justify-between gap-3 w-full">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0">
+              <Flame className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary shrink-0" />
+            </div>
             <div className="min-w-0">
-              <h1 className="text-base sm:text-lg font-extrabold tracking-tight leading-tight">
+              <h1 className="font-sans font-extrabold tracking-tight text-white text-xl sm:text-2xl leading-tight">
                 Workout Logger
               </h1>
-              <p className="text-[11px] text-muted-foreground mt-0.5 hidden sm:block">
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 hidden sm:block truncate">
                 Plan exercises, log sets &amp; reps, track rest timers.
               </p>
             </div>
@@ -1098,7 +1100,7 @@ function WorkoutSessionManager() {
           <Button
             onClick={() => startNewSession([])}
             size="sm"
-            className="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 rounded-lg shrink-0"
+            className="h-9 px-3.5 sm:px-4 bg-primary hover:bg-primary/90 text-white font-bold text-xs shadow-sm shadow-primary/20 rounded-lg shrink-0 cursor-pointer"
           >
             <Play className="w-3.5 h-3.5 mr-1.5 fill-current" /> Start Session
           </Button>
@@ -1153,7 +1155,7 @@ function WorkoutSessionManager() {
                   <label className="text-xs font-semibold text-foreground">
                     Exercises{" "}
                     {routineExerciseIds.length > 0 && (
-                      <span className="ml-1.5 text-[10px] text-purple-400 font-mono">
+                      <span className="ml-1.5 text-[10px] text-primary font-mono font-bold">
                         ({routineExerciseIds.length})
                       </span>
                     )}
@@ -1165,7 +1167,7 @@ function WorkoutSessionManager() {
                       setRoutinePickerMuscle("");
                       setRoutinePickerOpen(true);
                     }}
-                    className="text-[11px] text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1"
+                    className="text-[11px] text-primary hover:text-primary/80 font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Plus className="w-3 h-3" /> Add Exercise
                   </button>
@@ -1178,7 +1180,7 @@ function WorkoutSessionManager() {
                       setRoutinePickerMuscle("");
                       setRoutinePickerOpen(true);
                     }}
-                    className="cursor-pointer rounded-lg border border-dashed border-purple-500/30 bg-purple-500/5 hover:bg-purple-500/10 transition-all p-4 text-center"
+                    className="cursor-pointer rounded-lg border border-dashed border-red-900/40 bg-red-950/20 hover:bg-red-950/30 hover:border-primary/40 transition-all p-3.5 text-center"
                   >
                     <p className="text-[11px] text-muted-foreground">
                       No exercises yet — tap to add
@@ -1236,7 +1238,7 @@ function WorkoutSessionManager() {
                 size="sm"
                 onClick={saveRoutine}
                 disabled={!routineName.trim() || routineExerciseIds.length === 0}
-                className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold disabled:opacity-40"
+                className="flex-1 bg-primary hover:bg-primary/90 text-white text-xs font-semibold disabled:opacity-40 shadow-sm shadow-primary/20 cursor-pointer"
               >
                 {editingRoutine ? "Save Changes" : "Save Routine"}
               </Button>
@@ -1280,7 +1282,7 @@ function WorkoutSessionManager() {
                   variant="secondary"
                   className={`cursor-pointer text-[10px] py-0.5 px-2 ${
                     !routinePickerMuscle
-                      ? "bg-purple-500/20 text-purple-400"
+                      ? "bg-primary text-white font-semibold"
                       : "bg-secondary text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => setRoutinePickerMuscle("")}
@@ -1324,18 +1326,18 @@ function WorkoutSessionManager() {
                     }}
                     className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${
                       isAdded
-                        ? "bg-purple-500/15 border border-purple-500/30"
+                        ? "bg-red-950/40 border border-primary/30"
                         : "hover:bg-secondary/70 border border-transparent"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <div
                         className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          isAdded ? "bg-purple-500/20" : "bg-secondary"
+                          isAdded ? "bg-primary/20" : "bg-secondary"
                         }`}
                       >
                         {isAdded ? (
-                          <Check className="w-3.5 h-3.5 text-purple-400" />
+                          <Check className="w-3.5 h-3.5 text-primary" />
                         ) : (
                           <Dumbbell className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
@@ -1343,7 +1345,7 @@ function WorkoutSessionManager() {
                       <div>
                         <div
                           className={`font-semibold text-xs ${
-                            isAdded ? "text-purple-300" : "group-hover:text-blue-400"
+                            isAdded ? "text-red-200" : "group-hover:text-primary"
                           } transition-colors`}
                         >
                           {ex.name}
@@ -1354,8 +1356,8 @@ function WorkoutSessionManager() {
                     <span
                       className={`text-[10px] font-bold ${
                         isAdded
-                          ? "text-purple-400"
-                          : "text-blue-400 opacity-0 group-hover:opacity-100"
+                          ? "text-primary"
+                          : "text-primary opacity-0 group-hover:opacity-100"
                       } transition-opacity`}
                     >
                       {isAdded ? "✓ Added" : "+ Add"}
@@ -1369,7 +1371,7 @@ function WorkoutSessionManager() {
               <Button
                 size="sm"
                 onClick={() => setRoutinePickerOpen(false)}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold"
+                className="w-full bg-primary hover:bg-primary/90 text-white text-xs font-semibold shadow-sm shadow-primary/20 cursor-pointer"
               >
                 Done ({routineExerciseIds.length} selected)
               </Button>
@@ -1444,7 +1446,7 @@ function WorkoutSessionManager() {
           <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-2xl shadow-2xl p-4 space-y-4">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-blue-400" />
+                <CalendarIcon className="w-4 h-4 text-primary" />
                 <h3 className="font-bold text-sm text-foreground">
                   Adjust Session Date &amp; Time
                 </h3>
@@ -1500,7 +1502,7 @@ function WorkoutSessionManager() {
               <Button
                 size="sm"
                 onClick={saveEditedSessionDate}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+                className="flex-1 bg-primary hover:bg-primary/90 text-white text-xs font-semibold shadow-sm shadow-primary/20 cursor-pointer"
               >
                 Save Date &amp; Time
               </Button>

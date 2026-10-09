@@ -318,7 +318,7 @@ export default function DashboardPage() {
               </h2>
               <div className="flex-1 h-[1px] bg-gradient-to-r from-[#222226] via-[#FF1E27]/40 to-[#FF1E27]/80" />
               <span className="font-display font-black text-[#FF1E27] tracking-widest text-xs sm:text-sm shrink-0 select-none">
-                ///
+                {"///"}
               </span>
             </div>
 

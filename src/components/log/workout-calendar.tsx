@@ -124,7 +124,7 @@ export function WorkoutCalendar({
                           : hasWorkout
                             ? "hover:bg-emerald-500/10 text-foreground font-semibold"
                             : "hover:bg-secondary/60 text-foreground",
-                        modifiers.today && !isSelected ? "ring-1 ring-blue-400/60" : "",
+                        modifiers.today && !isSelected ? "ring-1 ring-primary/60" : "",
                         modifiers.outside ? "opacity-30" : "",
                       ].filter(Boolean).join(" ")}
                     >
@@ -151,7 +151,7 @@ export function WorkoutCalendar({
                 Workout logged
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-3 h-3 rounded ring-1 ring-blue-400/60 inline-block" />
+                <span className="w-3 h-3 rounded ring-1 ring-primary/60 inline-block" />
                 Today
               </span>
               <span className="flex items-center gap-1">
@@ -245,7 +245,7 @@ export function WorkoutCalendar({
                                 e.stopPropagation();
                                 onEditDate(session);
                               }}
-                              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
+                              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-primary hover:bg-primary/10"
                               title="Adjust date/time"
                             >
                               <Edit2 className="w-2.5 h-2.5 mr-0.5" /> Date
@@ -289,7 +289,7 @@ export function WorkoutCalendar({
                                 <span className="text-muted-foreground">
                                   {log.sets.length}s
                                 </span>
-                                <span className="font-mono text-blue-400 font-bold">
+                                <span className="font-mono text-primary font-bold">
                                   {maxWt} {globalUnit}
                                 </span>
                               </div>

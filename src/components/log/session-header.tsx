@@ -49,11 +49,11 @@ export function SessionHeader({
         <div className="flex items-center justify-between w-full">
           {/* Elapsed timer badge */}
           <div
-            className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-blue-500/10
-                       border border-blue-500/20 text-blue-400 font-mono font-bold text-sm"
+            className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-primary/10
+                       border border-primary/20 text-primary font-mono font-bold text-sm"
             aria-label="Session elapsed time"
           >
-            <Clock className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+            <Clock className="w-3.5 h-3.5 text-primary animate-pulse" />
             <span>{fmtTime(elapsedSeconds)}</span>
           </div>
 
@@ -67,7 +67,7 @@ export function SessionHeader({
             title="Adjust session date & time"
             aria-label="Adjust session date and time"
           >
-            <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <Calendar className="w-3.5 h-3.5 text-primary/80 shrink-0" />
             <span>{displayDate}</span>
             <Edit2 className="w-2.5 h-2.5 opacity-60 ml-0.5 shrink-0" />
           </button>
@@ -89,7 +89,7 @@ export function SessionHeader({
                 onClick={() => setUnit(u)}
                 className={`px-3 py-1 rounded-md font-semibold transition-all h-7 ${
                   unit === u
-                    ? "bg-blue-600 text-white shadow-sm"
+                    ? "bg-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 aria-pressed={unit === u}
