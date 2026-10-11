@@ -294,7 +294,39 @@ function AICoachChat() {
 
 export default function AIPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading AI Coach...</div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-4 max-w-4xl mx-auto flex flex-col h-[calc(100vh-8.5rem)] animate-pulse">
+          {/* Top bar skeleton */}
+          <div className="flex items-center justify-between pb-2 border-b border-[#222226]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#1a1a1f]" />
+              <div className="space-y-1.5">
+                <div className="h-4 w-48 rounded bg-[#222226]" />
+                <div className="h-3 w-64 rounded bg-[#222226]" />
+              </div>
+            </div>
+            <div className="h-8 w-20 rounded bg-[#222226]" />
+          </div>
+          {/* Message skeletons */}
+          <div className="flex-1 space-y-4 overflow-hidden">
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 rounded-lg bg-[#1a1a1f] shrink-0" />
+              <div className="h-28 w-3/4 rounded-2xl bg-[#121215] border border-[#222226]" />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <div className="h-12 w-1/2 rounded-2xl bg-[#222226]" />
+              <div className="w-8 h-8 rounded-lg bg-[#1a1a1f] shrink-0" />
+            </div>
+          </div>
+          {/* Input skeleton */}
+          <div className="pt-2 border-t border-[#222226] flex gap-2">
+            <div className="flex-1 h-11 rounded-lg bg-[#121215] border border-[#222226]" />
+            <div className="w-20 h-11 rounded-lg bg-[#222226]" />
+          </div>
+        </div>
+      }
+    >
       <AICoachChat />
     </Suspense>
   );

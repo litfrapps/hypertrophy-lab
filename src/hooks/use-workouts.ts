@@ -297,7 +297,6 @@ export function useWorkouts() {
       if (res.status === 503) {
         // Supabase unconfigured: safe fallback, keep in localStorage
         setIsOffline(true);
-        console.info("[useWorkouts] Supabase not configured. Workout safely preserved in localStorage.");
         return;
       }
 

@@ -788,8 +788,25 @@ export default function ProgressPage() {
   return (
     <Suspense
       fallback={
-        <div className="py-20 text-center text-sm text-muted-foreground">
-          Loading progress tracker...
+        <div className="space-y-6 max-w-5xl mx-auto pb-12 animate-pulse">
+          {/* Header skeleton */}
+          <div className="space-y-2">
+            <div className="h-3 w-40 rounded bg-[#222226]" />
+            <div className="h-8 w-72 rounded bg-[#222226]" />
+            <div className="h-4 w-96 rounded bg-[#222226]" />
+          </div>
+          {/* Picker bar skeleton */}
+          <div className="h-16 rounded-xl bg-[#121215] border border-[#222226]" />
+          {/* Stats rows skeleton */}
+          <div className="flex flex-col gap-2">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 rounded-xl bg-[#121215] border border-[#222226]" />
+            ))}
+          </div>
+          {/* Chart skeleton */}
+          <div className="h-96 rounded-xl bg-[#121215] border border-[#222226]" />
+          {/* History skeleton */}
+          <div className="h-48 rounded-xl bg-[#121215] border border-[#222226]" />
         </div>
       }
     >

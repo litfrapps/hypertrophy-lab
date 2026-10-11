@@ -15,10 +15,6 @@ export interface PubMedArticle {
 
 export type PubMedPaper = PubMedArticle;
 
-export interface SearchPubMedFn {
-  (query: string, maxResults?: number): Promise<PubMedArticle[]>;
-}
-
 const EUTILS_BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const REQUEST_TIMEOUT_MS = 7000;
 
