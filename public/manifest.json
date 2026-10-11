@@ -1,11 +1,11 @@
 {
   "name": "Muscle Lab",
   "short_name": "Muscle Lab",
-  "description": "Science-backed hypertrophy training tracker. Log workouts, visualize progressive overload, and learn from peer-reviewed research.",
+  "description": "Science-backed hypertrophy workout tracking",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1120",
-  "theme_color": "#3b82f6",
+  "background_color": "#08080A",
+  "theme_color": "#08080A",
   "orientation": "portrait",
   "icons": [
     {
