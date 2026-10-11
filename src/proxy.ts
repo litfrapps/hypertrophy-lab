@@ -28,6 +28,7 @@ const isPublicPage = createRouteMatcher([
   "/science(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/api/health",
 ]);
 
 /**

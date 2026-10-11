@@ -13,6 +13,7 @@
     "@base-ui/react": "^1.8.0",
     "@clerk/nextjs": "^7.9.10",
     "@clerk/ui": "^1.38.1",
+    "@google/generative-ai": "^0.24.1",
     "@shadcn/react": "^0.3.1",
     "@supabase/supabase-js": "^2.117.2",
     "class-variance-authority": "^0.7.1",
