@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedSupabase } from "@/lib/supabase-server";
+import { WorkoutLog, WorkoutSet } from "@/types";
 
 // ──────────────────────────────────────────
 // PATCH /api/sessions/[id]
@@ -43,7 +44,7 @@ export async function PATCH(
   }
 
   // Update session record if date or durationSeconds provided
-  const sessionUpdate: Record<string, any> = {};
+  const sessionUpdate: Record<string, unknown> = {};
   if (date) sessionUpdate.date = date;
   if (durationSeconds !== undefined) sessionUpdate.duration_seconds = durationSeconds;
 
@@ -70,7 +71,7 @@ export async function PATCH(
       .eq("user_id", userId);
 
     const existingLogIds = (existingLogs ?? []).map((l: { id: string }) => l.id);
-    const incomingLogIds = new Set(logs.map((l: any) => l.id));
+    const incomingLogIds = new Set(logs.map((l: WorkoutLog) => l.id));
 
     // Determine which logs were deleted
     const toDeleteIds = existingLogIds.filter((lid) => !incomingLogIds.has(lid));
@@ -99,7 +100,7 @@ export async function PATCH(
       // Replace sets for this log
       await supabase.from("workout_sets").delete().eq("log_id", log.id);
 
-      const setsToInsert = (log.sets ?? []).map((s: any, idx: number) => ({
+      const setsToInsert = (log.sets ?? []).map((s: WorkoutSet, idx: number) => ({
         log_id: log.id,
         set_number: s.setNumber || idx + 1,
         reps: Number(s.reps),

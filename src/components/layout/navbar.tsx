@@ -17,6 +17,7 @@ import {
   Clock,
   Zap,
   Scale,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
@@ -273,14 +274,10 @@ export function Navbar() {
               <SignInButton mode="modal">
                 <button
                   type="button"
-                  className="relative w-7 h-7 rounded-full ring-2 ring-[#FF1E27] p-0.5 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none"
+                  className="relative w-7 h-7 rounded-full ring-2 ring-[#FF1E27] p-0.5 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity focus:outline-none flex items-center justify-center bg-[#2B0A0C]"
                   aria-label="Account Profile"
                 >
-                  <img
-                    src="/images/user-avatar.jpg"
-                    alt="Athlete Profile"
-                    className="w-full h-full object-cover rounded-full"
-                  />
+                  <User className="w-3.5 h-3.5 text-[#FF1E27]" />
                 </button>
               </SignInButton>
             </Show>

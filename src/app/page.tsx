@@ -284,22 +284,13 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
         {/* CENTER COLUMN (Full on mobile, col-span-8 on desktop) */}
         <div className="lg:col-span-8 space-y-4 sm:space-y-4.5">
-          {/* ── 1. WELCOME HERO CARD (Crisp, less rounded) ─────────────────────── */}
-          <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] p-4 sm:p-5 shadow-md">
-            {/* Background Texture & 20KG Barbell Plate Image */}
-            <div className="absolute right-0 top-0 bottom-0 w-3/5 sm:w-1/2 overflow-hidden pointer-events-none select-none">
-              <img
-                src="/images/hero-plate.jpg"
-                alt="Olympic barbell weight plate"
-                className="w-full h-full object-cover object-center opacity-80 mix-blend-screen"
-              />
-              {/* Cinematic dark gradients to blend into card */}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#121215] via-[#121215]/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#121215] via-transparent to-transparent" />
-            </div>
+          {/* ── 1. WELCOME HERO CARD (Pure CSS dark radial/linear gradient) ────── */}
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1c080a] via-[#121215] to-[#08080A] border border-red-900/30 p-4 sm:p-5 shadow-md">
+            {/* Pure CSS ambient dark radial glow */}
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-[#FF1E27]/10 via-transparent to-transparent blur-2xl" />
 
             {/* Hero Text Content */}
-            <div className="relative z-10 max-w-[65%] sm:max-w-md">
+            <div className="relative z-10 max-w-md">
               <p className="font-display text-[10px] font-bold text-[#FF1E27] tracking-[0.16em] uppercase">
                 WELCOME BACK,
               </p>
@@ -312,7 +303,7 @@ export default function DashboardPage() {
                 Your progress matters. Let&apos;s keep building.
               </p>
 
-              {/* Red decorative slash rule */}
+              {/* Red decorative accent slash */}
               <div className="flex items-center gap-1.5 mt-3">
                 <div className="h-1.5 w-5 rounded-xs bg-[#FF1E27] -skew-x-12" />
                 <div className="h-1.5 w-2.5 rounded-xs bg-[#FF1E27]/60 -skew-x-12" />
@@ -441,21 +432,11 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Quick Action Cards (2-column prominent cards) */}
+            {/* Quick Action Cards (2-column prominent solid surface cards) */}
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
               {/* Card 1: LOG WORKOUT */}
               <Link href="/log" className="group block h-full">
-                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] p-3.5 sm:p-4 h-full group-hover:border-[#FF1E27]/60 group-hover:shadow-md group-hover:shadow-[#FF1E27]/10 transition-all duration-200">
-                  {/* Background photo texture */}
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-                    <img
-                      src="/images/action-workout.jpg"
-                      alt="Log workout texture"
-                      className="w-full h-full object-cover opacity-20 group-hover:opacity-30 group-hover:scale-105 transition-all duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#121215] via-[#121215]/80 to-transparent" />
-                  </div>
-
+                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
                   <div className="relative z-10 flex flex-col justify-between h-full">
                     <div>
                       <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
@@ -477,17 +458,7 @@ export default function DashboardPage() {
 
               {/* Card 2: VIEW EXERCISES */}
               <Link href="/exercises" className="group block h-full">
-                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] p-3.5 sm:p-4 h-full group-hover:border-[#FF1E27]/60 group-hover:shadow-md group-hover:shadow-[#FF1E27]/10 transition-all duration-200">
-                  {/* Background photo texture */}
-                  <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
-                    <img
-                      src="/images/action-dumbbells.jpg"
-                      alt="Exercises rack texture"
-                      className="w-full h-full object-cover opacity-20 group-hover:opacity-30 group-hover:scale-105 transition-all duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#121215] via-[#121215]/80 to-transparent" />
-                  </div>
-
+                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
                   <div className="relative z-10 flex flex-col justify-between h-full">
                     <div>
                       <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
@@ -606,20 +577,11 @@ export default function DashboardPage() {
                       key={session.id}
                       type="button"
                       onClick={() => setSelectedSessionForModal(session)}
-                      className="w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg border border-[#222226] bg-[#121215] hover:border-[#FF1E27]/50 hover:bg-[#16161a] transition-all cursor-pointer group"
+                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg border border-[#222226] bg-[#121215] hover:border-primary/30 hover:bg-[#16161a] transition-all cursor-pointer group"
                     >
-                      {/* Date block */}
-                      <div className="w-8.5 h-8.5 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/20 flex flex-col items-center justify-center shrink-0 text-[#FF1E27] group-hover:border-[#FF1E27]/50 transition-colors">
-                        <span className="text-[7.5px] font-bold font-display uppercase leading-none">
-                          {isValidDate
-                            ? sessionDate.toLocaleDateString("en-US", {
-                                month: "short",
-                              })
-                            : "—"}
-                        </span>
-                        <span className="text-xs font-extrabold font-mono leading-tight mt-0.5">
-                          {isValidDate ? sessionDate.getDate() : "—"}
-                        </span>
+                      {/* Sleek, compact red icon badge */}
+                      <div className="flex items-center justify-center shrink-0 bg-primary/10 text-primary border border-primary/20 p-3 rounded-xl group-hover:border-primary/50 group-hover:bg-primary/15 transition-all">
+                        <Dumbbell className="w-4 h-4 text-primary" />
                       </div>
 
                       {/* Middle metadata */}
