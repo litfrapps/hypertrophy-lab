@@ -161,6 +161,9 @@ export async function POST(req: NextRequest) {
               sources,
             });
           }
+        } else {
+          const errorDetails = await response.text();
+          console.warn("[Gemini API Error]", response.status, errorDetails);
         }
       } catch (geminiError) {
         console.warn("Gemini API call failed, falling back to local scientific engine:", geminiError);
