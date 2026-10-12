@@ -120,3 +120,68 @@ create policy "Users can manage their own sets"
         and l.user_id = requesting_user_id()
     )
   );
+
+-- ─────────────────────────────────────────────────────
+-- Table: routines
+-- ─────────────────────────────────────────────────────
+create table if not exists public.routines (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     text not null,                 -- Clerk user ID (e.g. "user_2...")
+  name        text not null,
+  exercises   jsonb not null default '[]'::jsonb,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
+);
+
+-- Indexes for routines
+create index if not exists idx_routines_user_id on public.routines(user_id);
+create index if not exists idx_routines_created_at on public.routines(created_at desc);
+
+-- RLS for routines
+alter table public.routines enable row level security;
+
+drop policy if exists "Users can manage their own routines" on public.routines;
+create policy "Users can manage their own routines"
+  on public.routines
+  for all
+  using (
+    auth.role() = 'service_role' or
+    user_id = requesting_user_id() or
+    auth.role() = 'anon'
+  )
+  with check (
+    auth.role() = 'service_role' or
+    user_id = requesting_user_id() or
+    auth.role() = 'anon'
+  );
+
+-- ─────────────────────────────────────────────────────
+-- Table: user_settings
+-- ─────────────────────────────────────────────────────
+create table if not exists public.user_settings (
+  user_id         text primary key,              -- Clerk user ID (e.g. "user_2...")
+  preferred_unit  text not null default 'kg',    -- 'kg' or 'lbs'
+  updated_at      timestamptz default now()
+);
+
+-- Indexes for user_settings
+create index if not exists idx_user_settings_user_id on public.user_settings(user_id);
+
+-- RLS for user_settings
+alter table public.user_settings enable row level security;
+
+drop policy if exists "Users can manage their own settings" on public.user_settings;
+create policy "Users can manage their own settings"
+  on public.user_settings
+  for all
+  using (
+    auth.role() = 'service_role' or
+    user_id = requesting_user_id() or
+    auth.role() = 'anon'
+  )
+  with check (
+    auth.role() = 'service_role' or
+    user_id = requesting_user_id() or
+    auth.role() = 'anon'
+  );
+

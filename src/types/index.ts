@@ -116,3 +116,11 @@ export interface UserPreferences {
   defaultRestTimer: number; // in seconds
   timerPresets: TimerPreset[];
 }
+
+// --- Custom Routines ---
+export interface SavedRoutine {
+  id: string;
+  name: string;
+  exerciseIds: string[];
+}
+

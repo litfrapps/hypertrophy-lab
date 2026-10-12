@@ -10,7 +10,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { WorkoutLog, WorkoutSession } from "@/types";
+import { WorkoutLog, WorkoutSession, SavedRoutine } from "@/types";
+import { supabase } from "@/lib/supabase";
+
+export type { SavedRoutine };
 
 // ──────────────────────────────────────────
 // E1RM Utility — Epley Formula
@@ -52,6 +55,53 @@ export function getLogE1RM(log: WorkoutLog): number {
 
 const STORAGE_KEY = "hypertrophy-lab-sessions";
 const LEGACY_STORAGE_KEY = "hypertrophy-lab-workouts";
+export const ROUTINES_STORAGE_KEY = "muscle_lab_custom_routines";
+const LEGACY_ROUTINES_KEY = "hypertrophy_custom_routines";
+
+// ──────────────────────────────────────────
+// Routine LocalStorage Persistence Helpers
+// ──────────────────────────────────────────
+export function loadLocalRoutines(): SavedRoutine[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = localStorage.getItem(ROUTINES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+
+    const legacy = localStorage.getItem(LEGACY_ROUTINES_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        saveLocalRoutines(parsed);
+        try {
+          localStorage.removeItem(LEGACY_ROUTINES_KEY);
+        } catch {}
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.warn("[useWorkouts] Failed to read routines from localStorage:", err);
+  }
+
+  return [];
+}
+
+export function saveLocalRoutines(routines: SavedRoutine[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ROUTINES_STORAGE_KEY, JSON.stringify(routines));
+    setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("hypertrophy-routines-updated", { detail: routines })
+      );
+    }, 0);
+  } catch (err) {
+    console.warn("[useWorkouts] Failed to write routines to localStorage:", err);
+  }
+}
 
 // ──────────────────────────────────────────
 // LocalStorage Persistence Helpers
@@ -112,7 +162,7 @@ function saveLocalSessions(sessions: WorkoutSession[]) {
 }
 
 export function useWorkouts() {
-  const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
+  const { isLoaded: clerkLoaded, isSignedIn, userId } = useAuth();
   const {
     globalUnit,
     setGlobalUnit,
@@ -122,6 +172,7 @@ export function useWorkouts() {
   } = useUnit();
 
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [savedRoutines, setSavedRoutines] = useState<SavedRoutine[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
@@ -130,10 +181,17 @@ export function useWorkouts() {
   // 1. Initial Load: Immediate local hydration & sync across instances
   // ──────────────────────────────────────────
   useEffect(() => {
-    const cached = loadLocalSessions();
-    if (cached.length > 0) {
+    const cachedSessions = loadLocalSessions();
+    if (cachedSessions.length > 0) {
       setTimeout(() => {
-        setSessions(cached);
+        setSessions(cachedSessions);
+      }, 0);
+    }
+
+    const cachedRoutines = loadLocalRoutines();
+    if (cachedRoutines.length > 0) {
+      setTimeout(() => {
+        setSavedRoutines(cachedRoutines);
       }, 0);
     }
   }, []);
@@ -149,11 +207,26 @@ export function useWorkouts() {
         if (cached.length > 0) setSessions(cached);
       }
     };
+
+    const handleRoutineSync = (e: Event) => {
+      const customEvent = e as CustomEvent<SavedRoutine[]>;
+      if (customEvent.detail && Array.isArray(customEvent.detail)) {
+        setSavedRoutines(customEvent.detail);
+      } else {
+        const cached = loadLocalRoutines();
+        if (cached.length > 0) setSavedRoutines(cached);
+      }
+    };
+
     window.addEventListener("hypertrophy-sessions-updated", handleSync);
+    window.addEventListener("hypertrophy-routines-updated", handleRoutineSync);
     window.addEventListener("storage", handleSync);
+    window.addEventListener("storage", handleRoutineSync);
     return () => {
       window.removeEventListener("hypertrophy-sessions-updated", handleSync);
+      window.removeEventListener("hypertrophy-routines-updated", handleRoutineSync);
       window.removeEventListener("storage", handleSync);
+      window.removeEventListener("storage", handleRoutineSync);
     };
   }, []);
 
@@ -237,10 +310,79 @@ export function useWorkouts() {
 
     syncSessions();
 
+    // ──────────────────────────────────────────
+    // 2b. Sync Routines with Supabase
+    // ──────────────────────────────────────────
+    async function syncRoutines() {
+      const client = supabase;
+      if (!client) return;
+      try {
+        const { data, error } = await client
+          .from("routines")
+          .select("*")
+          .eq("user_id", userId);
+
+        if (error) {
+          console.warn("[useWorkouts] Supabase routines fetch error:", error.message);
+          return;
+        }
+
+        if (data && Array.isArray(data) && isMounted) {
+          interface DbRoutineRecord {
+            id: string | number;
+            user_id?: string;
+            name: string;
+            exercises?: unknown;
+            exercise_ids?: string[];
+          }
+          const remoteRoutines: SavedRoutine[] = (data as unknown as DbRoutineRecord[]).map((r) => ({
+            id: String(r.id),
+            name: r.name,
+            exerciseIds: Array.isArray(r.exercises)
+              ? (r.exercises as unknown[]).map((e) =>
+                  typeof e === "string"
+                    ? e
+                    : typeof e === "object" && e !== null && "id" in e
+                    ? String((e as { id: unknown }).id)
+                    : ""
+                )
+              : (r.exercise_ids ?? []),
+          }));
+
+          const local = loadLocalRoutines();
+          const remoteIds = new Set(remoteRoutines.map((r) => r.id));
+          const unsynced = local.filter((r) => !remoteIds.has(r.id));
+
+          if (unsynced.length > 0) {
+            unsynced.forEach(async (u) => {
+              try {
+                await client.from("routines").insert({
+                  id: u.id,
+                  user_id: userId,
+                  name: u.name,
+                  exercises: u.exerciseIds,
+                });
+              } catch (err) {
+                console.warn("[useWorkouts] Background sync error for routine:", u.id, err);
+              }
+            });
+          }
+
+          const merged = [...unsynced, ...remoteRoutines];
+          saveLocalRoutines(merged);
+          setSavedRoutines(merged);
+        }
+      } catch (err) {
+        console.warn("[useWorkouts] Offline fallback reading routines from Supabase:", err);
+      }
+    }
+
+    syncRoutines();
+
     return () => {
       isMounted = false;
     };
-  }, [clerkLoaded, isSignedIn]);
+  }, [clerkLoaded, isSignedIn, userId]);
 
   // ──────────────────────────────────────────
   // Derived: flat list of all workout logs
@@ -534,12 +676,116 @@ export function useWorkouts() {
     });
   }, []);
 
+  // ──────────────────────────────────────────
+  // Routine Operations (Dual-Layer Sync)
+  // ──────────────────────────────────────────
+  const addRoutine = useCallback(
+    async (routineName: string, routineExercises: string[]) => {
+      const newRoutine: SavedRoutine = {
+        id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `rt_${Date.now()}`,
+        name: routineName,
+        exerciseIds: routineExercises,
+      };
+
+      const current = loadLocalRoutines();
+      const updated = [newRoutine, ...current.filter((r) => r.id !== newRoutine.id)];
+      saveLocalRoutines(updated);
+      setSavedRoutines(updated);
+
+      const client = supabase;
+      if (userId && client) {
+        try {
+          const { error } = await client.from("routines").insert({
+            id: newRoutine.id,
+            user_id: userId,
+            name: routineName,
+            exercises: routineExercises,
+          });
+          if (error) {
+            console.warn("[useWorkouts] Error inserting routine into Supabase:", error.message);
+          }
+        } catch (err) {
+          console.warn("[useWorkouts] Offline fallback inserting routine:", err);
+        }
+      }
+
+      return newRoutine;
+    },
+    [userId]
+  );
+
+  const updateRoutine = useCallback(
+    async (routineId: string, routineName: string, routineExercises: string[]) => {
+      const current = loadLocalRoutines();
+      const updated = current.map((r) =>
+        r.id === routineId
+          ? { ...r, name: routineName, exerciseIds: routineExercises }
+          : r
+      );
+      saveLocalRoutines(updated);
+      setSavedRoutines(updated);
+
+      const client = supabase;
+      if (userId && client) {
+        try {
+          const { error } = await client
+            .from("routines")
+            .update({
+              name: routineName,
+              exercises: routineExercises,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", routineId)
+            .eq("user_id", userId);
+          if (error) {
+            console.warn("[useWorkouts] Error updating routine in Supabase:", error.message);
+          }
+        } catch (err) {
+          console.warn("[useWorkouts] Offline fallback updating routine:", err);
+        }
+      }
+    },
+    [userId]
+  );
+
+  const deleteRoutine = useCallback(
+    async (routineId: string) => {
+      const current = loadLocalRoutines();
+      const updated = current.filter((r) => r.id !== routineId);
+      saveLocalRoutines(updated);
+      setSavedRoutines(updated);
+
+      const client = supabase;
+      if (userId && client) {
+        try {
+          const { error } = await client
+            .from("routines")
+            .delete()
+            .eq("id", routineId)
+            .eq("user_id", userId);
+          if (error) {
+            console.warn("[useWorkouts] Error deleting routine from Supabase:", error.message);
+          }
+        } catch (err) {
+          console.warn("[useWorkouts] Offline fallback deleting routine:", err);
+        }
+      }
+    },
+    [userId]
+  );
+
   return {
     workouts,
     sessions: sortedSessions,
     isLoaded,
     isSaving,
     isOffline,
+    // Custom Routines
+    savedRoutines,
+    setSavedRoutines,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
     // Global unit system
     globalUnit,
     setGlobalUnit,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Home,
   ClipboardList,
@@ -20,9 +20,10 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, Show, UserButton, useAuth } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
+import { supabase } from "@/lib/supabase";
 import { FloatingBanner } from "@/components/log/floating-banner";
 
 // Stylized Electric Crimson "M" brand mark for Muscle Lab
@@ -74,6 +75,7 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const { userId, isLoaded: clerkLoaded, isSignedIn } = useAuth();
   const {
     isActive,
     elapsedSeconds,
@@ -81,6 +83,82 @@ export function Navbar() {
     liveVolume,
   } = useSession();
   const { globalUnit, toggleGlobalUnit } = useUnit();
+
+  // 1. On user login: Query preferred_unit from user_settings for the matching Clerk userId
+  useEffect(() => {
+    if (!clerkLoaded || !isSignedIn || !userId) return;
+    let isMounted = true;
+    async function loadUserUnit() {
+      const client = supabase;
+      if (!client) return;
+      try {
+        const { data, error } = await client
+          .from("user_settings")
+          .select("preferred_unit")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("[Navbar] Error querying user_settings unit:", error.message);
+          return;
+        }
+
+        if (isMounted && data?.preferred_unit) {
+          const pref = data.preferred_unit;
+          if (pref === "kg" || pref === "lbs") {
+            toggleGlobalUnit(pref);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem("hypertrophy-lab-unit", pref);
+              } catch {}
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[Navbar] Offline fallback for user_settings unit:", err);
+      }
+    }
+
+    loadUserUnit();
+    return () => {
+      isMounted = false;
+    };
+  }, [clerkLoaded, isSignedIn, userId, toggleGlobalUnit]);
+
+  // 2. On unit toggle (kg <-> lbs): Upsert into user_settings
+  const handleToggleUnit = useCallback(
+    async (targetUnit?: "kg" | "lbs") => {
+      const nextUnit: "kg" | "lbs" = targetUnit || (globalUnit === "kg" ? "lbs" : "kg");
+      toggleGlobalUnit(nextUnit);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("hypertrophy-lab-unit", nextUnit);
+        } catch {}
+      }
+
+      const client = supabase;
+      if (userId && client) {
+        try {
+          const { error } = await client
+            .from("user_settings")
+            .upsert(
+              {
+                user_id: userId,
+                preferred_unit: nextUnit,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id" }
+            );
+          if (error) {
+            console.warn("[Navbar] Error upserting unit to user_settings:", error.message);
+          }
+        } catch (err) {
+          console.warn("[Navbar] Offline fallback saving unit:", err);
+        }
+      }
+    },
+    [userId, globalUnit, toggleGlobalUnit]
+  );
 
   // Only show the floating banner when a session is active and NOT on /log
   const showSessionBanner = isActive && pathname !== "/log";
@@ -179,7 +257,7 @@ export function Navbar() {
             <div className="flex bg-[#08080a] rounded-md p-0.5 text-xs h-6 items-center border border-[#222226]">
               <button
                 type="button"
-                onClick={() => toggleGlobalUnit("kg")}
+                onClick={() => handleToggleUnit("kg")}
                 className={cn(
                   "px-2 py-0.5 rounded font-semibold transition-all h-5 text-[10px] cursor-pointer",
                   globalUnit === "kg"
@@ -191,7 +269,7 @@ export function Navbar() {
               </button>
               <button
                 type="button"
-                onClick={() => toggleGlobalUnit("lbs")}
+                onClick={() => handleToggleUnit("lbs")}
                 className={cn(
                   "px-2 py-0.5 rounded font-semibold transition-all h-5 text-[10px] cursor-pointer",
                   globalUnit === "lbs"
@@ -344,7 +422,7 @@ export function Navbar() {
                   <div className="flex bg-[#08080a] rounded-md p-0.5 text-xs h-7 items-center border border-[#222226]">
                     <button
                       type="button"
-                      onClick={() => toggleGlobalUnit("kg")}
+                      onClick={() => handleToggleUnit("kg")}
                       className={cn(
                         "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
                         globalUnit === "kg"
@@ -356,7 +434,7 @@ export function Navbar() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => toggleGlobalUnit("lbs")}
+                      onClick={() => handleToggleUnit("lbs")}
                       className={cn(
                         "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
                         globalUnit === "lbs"

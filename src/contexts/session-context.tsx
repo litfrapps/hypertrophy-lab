@@ -10,7 +10,9 @@ import {
   ReactNode,
 } from "react";
 import { Exercise, WorkoutSet } from "@/types";
-import { useUnit } from "@/contexts/unit-context";
+import { useUnit, UNIT_STORAGE_KEY } from "@/contexts/unit-context";
+import { useAuth } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,7 @@ interface SessionContextValue extends ActiveSessionState {
   cancelSession: () => void;
   setSessionDate: (date: string) => void;
   setUnit: (unit: "kg" | "lbs") => void;
+  toggleUnit: (targetUnit?: "kg" | "lbs") => void;
   setExercises: React.Dispatch<React.SetStateAction<SessionExerciseItem[]>>;
   totalPlannedSets: number;
   totalCompletedSets: number;
@@ -53,6 +56,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const { isLoaded: clerkLoaded, isSignedIn, userId } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -62,12 +66,89 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [exercises, setExercises] = useState<SessionExerciseItem[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 1. On Clerk auth load / user login: Query preferred_unit from user_settings
+  useEffect(() => {
+    if (!clerkLoaded || !isSignedIn || !userId) return;
+
+    let isMounted = true;
+    async function loadUserUnit() {
+      const client = supabase;
+      if (!client) return;
+      try {
+        const { data, error } = await client
+          .from("user_settings")
+          .select("preferred_unit")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (error) {
+          console.warn("[SessionContext] Error fetching unit from user_settings:", error.message);
+          return;
+        }
+
+        if (isMounted && data?.preferred_unit) {
+          const pref = data.preferred_unit;
+          if (pref === "kg" || pref === "lbs") {
+            setGlobalUnit(pref);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(UNIT_STORAGE_KEY, pref);
+              } catch {}
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("[SessionContext] Offline fallback for user_settings unit:", err);
+      }
+    }
+
+    loadUserUnit();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clerkLoaded, isSignedIn, userId, setGlobalUnit]);
+
+  // 2. On unit toggle: Upsert into user_settings
   const setUnit = useCallback(
     (newUnit: "kg" | "lbs") => {
       setGlobalUnit(newUnit);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(UNIT_STORAGE_KEY, newUnit);
+        } catch {}
+      }
+
+      const client = supabase;
+      if (userId && client) {
+        client
+          .from("user_settings")
+          .upsert(
+            {
+              user_id: userId,
+              preferred_unit: newUnit,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id" }
+          )
+          .then(({ error }) => {
+            if (error) {
+              console.warn("[SessionContext] Error saving unit to Supabase:", error.message);
+            }
+          });
+      }
     },
-    [setGlobalUnit]
+    [userId, setGlobalUnit]
   );
+
+  const toggleUnit = useCallback(
+    (targetUnit?: "kg" | "lbs") => {
+      const nextUnit: "kg" | "lbs" = targetUnit || (unit === "kg" ? "lbs" : "kg");
+      setUnit(nextUnit);
+    },
+    [unit, setUnit]
+  );
+
 
   useEffect(() => {
     if (isActive && startTime) {
@@ -143,6 +224,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         cancelSession,
         setSessionDate,
         setUnit,
+        toggleUnit,
         setExercises,
         totalPlannedSets,
         totalCompletedSets,

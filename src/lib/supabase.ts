@@ -2,12 +2,12 @@
 // Hypertrophy Lab — Supabase Client
 // ============================================
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
-const isMisconfigured =
+export const isMisconfigured =
   !supabaseUrl ||
   supabaseUrl === "YOUR_SUPABASE_PROJECT_URL" ||
   !supabaseAnonKey ||
@@ -25,7 +25,7 @@ if (isMisconfigured && typeof window === "undefined") {
  * Pass a Clerk JWT token to enable Row Level Security (RLS) for the current user.
  * Returns null if Supabase is not configured yet.
  */
-export function createSupabaseClient(clerkToken?: string | null) {
+export function createSupabaseClient(clerkToken?: string | null): SupabaseClient | null {
   if (isMisconfigured) return null;
   return createClient(supabaseUrl, supabaseAnonKey, {
     global: {
@@ -36,5 +36,6 @@ export function createSupabaseClient(clerkToken?: string | null) {
   });
 }
 
-// Default anon client (for server-side imports)
+// Default anon client (for browser & server-side imports)
 export const supabase = createSupabaseClient();
+
