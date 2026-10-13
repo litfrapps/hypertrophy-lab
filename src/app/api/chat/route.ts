@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { searchPubMed, PubMedArticle } from "@/lib/pubmed";
 import { researchPapers } from "@/lib/papers";
@@ -168,6 +169,11 @@ function generateEvidenceBasedResponse(userQuery: string, livePapers: PubMedArti
 }
 
 export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { messages } = await req.json();
     const lastMessage = Array.isArray(messages) ? messages[messages.length - 1] : undefined;

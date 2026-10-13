@@ -7,6 +7,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { getAuthenticatedSupabase } from "@/lib/supabase-server";
 
 interface DbWorkoutSet {
@@ -44,11 +45,16 @@ interface InputWorkoutSet {
 // GET /api/sessions
 // ──────────────────────────────────────────
 export async function GET() {
-  const { supabase, userId, unconfigured } = await getAuthenticatedSupabase();
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { supabase, unconfigured } = await getAuthenticatedSupabase();
   if (unconfigured) {
     return NextResponse.json({ error: "Supabase not configured", sessions: [] }, { status: 503 });
   }
-  if (!supabase || !userId) {
+  if (!supabase) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -115,11 +121,16 @@ export async function GET() {
 // Body: WorkoutSession JSON
 // ──────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  const { supabase, userId, unconfigured } = await getAuthenticatedSupabase();
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { supabase, unconfigured } = await getAuthenticatedSupabase();
   if (unconfigured) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   }
-  if (!supabase || !userId) {
+  if (!supabase) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
