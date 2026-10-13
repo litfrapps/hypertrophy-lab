@@ -9,6 +9,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -35,7 +36,7 @@ export function isSupabaseConfigured(): boolean {
 }
 
 export interface AuthenticatedSupabaseResult {
-  supabase: SupabaseClient | null;
+  supabase: SupabaseClient<Database> | null;
   userId: string | null;
   unconfigured: boolean;
 }
@@ -59,7 +60,7 @@ export async function getAuthenticatedSupabase(): Promise<AuthenticatedSupabaseR
     supabaseServiceKey &&
     supabaseServiceKey !== "YOUR_SUPABASE_SERVICE_ROLE_KEY"
   ) {
-    const client = createClient(supabaseUrl, supabaseServiceKey, {
+    const client = createClient<Database>(supabaseUrl, supabaseServiceKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -78,7 +79,7 @@ export async function getAuthenticatedSupabase(): Promise<AuthenticatedSupabaseR
   }
 
   // 3. Create client with token (or anon key fallback)
-  const client = createClient(supabaseUrl, supabaseAnonKey, {
+  const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

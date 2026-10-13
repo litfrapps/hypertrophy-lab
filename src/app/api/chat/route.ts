@@ -226,10 +226,9 @@ ${livePapersSection}
 `.trim();
 
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-          model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
-          systemInstruction: fullSystemInstruction,
-        });
+        const primaryModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
+        const fallbackModel =
+          primaryModel === "gemini-3.7-flash" ? "gemini-3.8-flash" : "gemini-3.7-flash";
 
         // Prepare multi-turn history if present
         const history: { role: "user" | "model"; parts: { text: string }[] }[] = [];
@@ -248,14 +247,26 @@ ${livePapersSection}
           }
         }
 
+        const executeGeneration = async (modelName: string): Promise<string> => {
+          const m = genAI.getGenerativeModel({
+            model: modelName,
+            systemInstruction: fullSystemInstruction,
+          });
+          if (history.length > 0) {
+            const chat = m.startChat({ history });
+            const result = await chat.sendMessage(userPrompt);
+            return result.response.text();
+          }
+          const result = await m.generateContent(userPrompt);
+          return result.response.text();
+        };
+
         let generatedText = "";
-        if (history.length > 0) {
-          const chat = model.startChat({ history });
-          const result = await chat.sendMessage(userPrompt);
-          generatedText = result.response.text();
-        } else {
-          const result = await model.generateContent(userPrompt);
-          generatedText = result.response.text();
+        try {
+          generatedText = await executeGeneration(primaryModel);
+        } catch (err) {
+          console.warn(`[Gemini API] Primary model ${primaryModel} failed, trying ${fallbackModel}:`, err);
+          generatedText = await executeGeneration(fallbackModel);
         }
 
         if (generatedText) {

@@ -87,6 +87,7 @@ export function Navbar() {
   // 1. On user login: Query preferred_unit from user_settings for the matching Clerk userId
   useEffect(() => {
     if (!clerkLoaded || !isSignedIn || !userId) return;
+    const currentUserId = userId;
     let isMounted = true;
     async function loadUserUnit() {
       const client = supabase;
@@ -95,7 +96,7 @@ export function Navbar() {
         const { data, error } = await client
           .from("user_settings")
           .select("preferred_unit")
-          .eq("user_id", userId)
+          .eq("user_id", currentUserId)
           .maybeSingle();
 
         if (error) {

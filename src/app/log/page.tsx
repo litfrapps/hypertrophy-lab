@@ -270,6 +270,9 @@ function WorkoutSessionManager() {
       return;
     }
 
+    const currentUserId = userId;
+    if (!currentUserId) return;
+
     let isMounted = true;
     async function fetchSupabaseRoutines() {
       const client = supabase;
@@ -278,7 +281,7 @@ function WorkoutSessionManager() {
         const { data, error } = await client
           .from("routines")
           .select("*")
-          .eq("user_id", userId);
+          .eq("user_id", currentUserId);
 
         if (error) {
           console.warn("[log/page] Supabase routines fetch error:", error.message);
@@ -317,7 +320,7 @@ function WorkoutSessionManager() {
               try {
                 await client.from("routines").insert({
                   id: u.id,
-                  user_id: userId,
+                  user_id: currentUserId,
                   name: u.name,
                   exercises: u.exerciseIds,
                 });

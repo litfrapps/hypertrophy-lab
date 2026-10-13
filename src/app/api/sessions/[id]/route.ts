@@ -44,7 +44,7 @@ export async function PATCH(
   }
 
   // Update session record if date or durationSeconds provided
-  const sessionUpdate: Record<string, unknown> = {};
+  const sessionUpdate: { date?: string; duration_seconds?: number | null } = {};
   if (date) sessionUpdate.date = date;
   if (durationSeconds !== undefined) sessionUpdate.duration_seconds = durationSeconds;
 

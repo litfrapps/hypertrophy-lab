@@ -315,12 +315,13 @@ export function useWorkouts() {
     // ──────────────────────────────────────────
     async function syncRoutines() {
       const client = supabase;
-      if (!client) return;
+      const currentUserId = userId;
+      if (!client || !currentUserId) return;
       try {
         const { data, error } = await client
           .from("routines")
           .select("*")
-          .eq("user_id", userId);
+          .eq("user_id", currentUserId);
 
         if (error) {
           console.warn("[useWorkouts] Supabase routines fetch error:", error.message);
@@ -358,7 +359,7 @@ export function useWorkouts() {
               try {
                 await client.from("routines").insert({
                   id: u.id,
-                  user_id: userId,
+                  user_id: currentUserId,
                   name: u.name,
                   exercises: u.exerciseIds,
                 });

@@ -18,7 +18,7 @@ interface DbWorkoutSet {
 
 interface DbWorkoutLog {
   id: string;
-  session_id: string;
+  session_id: string | null;
   date: string;
   exercise_id: string;
   exercise_name: string;
@@ -30,7 +30,7 @@ interface DbWorkoutLog {
 interface DbWorkoutSession {
   id: string;
   date: string;
-  duration_seconds: number;
+  duration_seconds: number | null;
   notes?: string | null;
   workout_logs?: DbWorkoutLog[];
 }
@@ -93,11 +93,11 @@ export async function GET() {
   const transformed = (sessions ?? []).map((s: DbWorkoutSession) => ({
     id: s.id,
     date: s.date,
-    durationSeconds: s.duration_seconds,
+    durationSeconds: s.duration_seconds ?? 0,
     notes: s.notes,
     logs: (s.workout_logs ?? []).map((l: DbWorkoutLog) => ({
       id: l.id,
-      sessionId: l.session_id,
+      sessionId: l.session_id ?? s.id,
       date: l.date,
       exerciseId: l.exercise_id,
       exerciseName: l.exercise_name,

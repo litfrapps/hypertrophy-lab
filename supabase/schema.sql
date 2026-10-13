@@ -11,6 +11,7 @@ create extension if not exists "pgcrypto";
 create or replace function public.requesting_user_id()
 returns text
 language sql stable
+set search_path = public
 as $$
   select coalesce(
     nullif(current_setting('request.jwt.claims', true)::json->>'sub', ''),
@@ -42,10 +43,10 @@ create policy "Users can manage their own sessions"
   on public.workout_sessions
   for all
   using (
-    auth.role() = 'service_role' or user_id = requesting_user_id()
+    (select auth.role()) = 'service_role' or user_id = (select public.requesting_user_id())
   )
   with check (
-    auth.role() = 'service_role' or user_id = requesting_user_id()
+    (select auth.role()) = 'service_role' or user_id = (select public.requesting_user_id())
   );
 
 -- ─────────────────────────────────────────────────────
@@ -77,10 +78,10 @@ create policy "Users can manage their own logs"
   on public.workout_logs
   for all
   using (
-    auth.role() = 'service_role' or user_id = requesting_user_id()
+    (select auth.role()) = 'service_role' or user_id = (select public.requesting_user_id())
   )
   with check (
-    auth.role() = 'service_role' or user_id = requesting_user_id()
+    (select auth.role()) = 'service_role' or user_id = (select public.requesting_user_id())
   );
 
 -- ─────────────────────────────────────────────────────
@@ -105,19 +106,19 @@ create policy "Users can manage their own sets"
   on public.workout_sets
   for all
   using (
-    auth.role() = 'service_role' or
+    (select auth.role()) = 'service_role' or
     exists (
       select 1 from public.workout_logs l
       where l.id = workout_sets.log_id
-        and l.user_id = requesting_user_id()
+        and l.user_id = (select public.requesting_user_id())
     )
   )
   with check (
-    auth.role() = 'service_role' or
+    (select auth.role()) = 'service_role' or
     exists (
       select 1 from public.workout_logs l
       where l.id = workout_sets.log_id
-        and l.user_id = requesting_user_id()
+        and l.user_id = (select public.requesting_user_id())
     )
   );
 
@@ -145,14 +146,12 @@ create policy "Users can manage their own routines"
   on public.routines
   for all
   using (
-    auth.role() = 'service_role' or
-    user_id = requesting_user_id() or
-    auth.role() = 'anon'
+    (select auth.role()) = 'service_role' or
+    user_id = (select public.requesting_user_id())
   )
   with check (
-    auth.role() = 'service_role' or
-    user_id = requesting_user_id() or
-    auth.role() = 'anon'
+    (select auth.role()) = 'service_role' or
+    user_id = (select public.requesting_user_id())
   );
 
 -- ─────────────────────────────────────────────────────
@@ -175,13 +174,10 @@ create policy "Users can manage their own settings"
   on public.user_settings
   for all
   using (
-    auth.role() = 'service_role' or
-    user_id = requesting_user_id() or
-    auth.role() = 'anon'
+    (select auth.role()) = 'service_role' or
+    user_id = (select public.requesting_user_id())
   )
   with check (
-    auth.role() = 'service_role' or
-    user_id = requesting_user_id() or
-    auth.role() = 'anon'
+    (select auth.role()) = 'service_role' or
+    user_id = (select public.requesting_user_id())
   );
-

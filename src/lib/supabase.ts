@@ -3,6 +3,7 @@
 // ============================================
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database.types";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -25,9 +26,9 @@ if (isMisconfigured && typeof window === "undefined") {
  * Pass a Clerk JWT token to enable Row Level Security (RLS) for the current user.
  * Returns null if Supabase is not configured yet.
  */
-export function createSupabaseClient(clerkToken?: string | null): SupabaseClient | null {
+export function createSupabaseClient(clerkToken?: string | null): SupabaseClient<Database> | null {
   if (isMisconfigured) return null;
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: clerkToken
         ? { Authorization: `Bearer ${clerkToken}` }

@@ -143,18 +143,28 @@ async function checkGemini(): Promise<ServiceResult> {
     };
   }
 
+  const primaryModel = process.env.GEMINI_MODEL || "gemini-3.7-flash";
+  const fallbackModel = primaryModel === "gemini-3.7-flash" ? "gemini-3.8-flash" : "gemini-3.7-flash";
+
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel(
-      { model: "gemini-3.8-flash" },
-      { apiVersion: "v1" }
-    );
-    const result = await model.generateContent("ping");
+    let usedModel = primaryModel;
+    let result;
+    try {
+      const model = genAI.getGenerativeModel({ model: primaryModel });
+      result = await model.generateContent("ping");
+    } catch (primaryErr) {
+      // Fallback model if primary model experiences temporary spike
+      usedModel = fallbackModel;
+      const model = genAI.getGenerativeModel({ model: fallbackModel });
+      result = await model.generateContent("ping");
+    }
+
     const text = result.response.text();
     return {
       ok: true,
       latencyMs: Math.round(now() - start),
-      message: `Gemini API reachable — model responded (${text.length} chars)`,
+      message: `Gemini API reachable (${usedModel}) — model responded (${text.length} chars)`,
       keyHint: redactKey(apiKey),
     };
   } catch (err) {

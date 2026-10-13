@@ -69,6 +69,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // 1. On Clerk auth load / user login: Query preferred_unit from user_settings
   useEffect(() => {
     if (!clerkLoaded || !isSignedIn || !userId) return;
+    const currentUserId = userId;
 
     let isMounted = true;
     async function loadUserUnit() {
@@ -78,7 +79,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const { data, error } = await client
           .from("user_settings")
           .select("preferred_unit")
-          .eq("user_id", userId)
+          .eq("user_id", currentUserId)
           .maybeSingle();
 
         if (error) {
