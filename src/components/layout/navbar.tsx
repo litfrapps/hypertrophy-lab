@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Home,
   ClipboardList,
@@ -20,7 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SignInButton, SignUpButton, Show, UserButton, useAuth } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
 import { FloatingBanner } from "@/components/log/floating-banner";
@@ -74,7 +74,6 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const { userId, isLoaded: clerkLoaded, isSignedIn } = useAuth();
   const {
     isActive,
     elapsedSeconds,

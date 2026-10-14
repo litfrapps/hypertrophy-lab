@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
 import { exercises, muscleGroups, muscleGroupColors } from "@/lib/exercises";
 import { useWorkouts } from "@/hooks/use-workouts";
 import { useSession } from "@/contexts/session-context";
@@ -101,7 +100,6 @@ function formatSessionTime(seconds: number): string {
 function WorkoutSessionManager() {
   const searchParams = useSearchParams();
   const preselectedExerciseId = searchParams.get("exercise");
-  const { userId, isLoaded: clerkLoaded, isSignedIn } = useAuth();
 
   const {
     addSession,
