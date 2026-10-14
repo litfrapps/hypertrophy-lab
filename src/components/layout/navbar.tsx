@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { SignInButton, SignUpButton, Show, UserButton, useAuth } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
-import { supabase } from "@/lib/supabase";
 import { FloatingBanner } from "@/components/log/floating-banner";
 
 // Stylized Electric Crimson "M" brand mark for Muscle Lab
@@ -81,85 +80,9 @@ export function Navbar() {
     elapsedSeconds,
     exercises: sessionExercises,
     liveVolume,
+    toggleUnit: handleToggleUnit,
   } = useSession();
-  const { globalUnit, toggleGlobalUnit } = useUnit();
-
-  // 1. On user login: Query preferred_unit from user_settings for the matching Clerk userId
-  useEffect(() => {
-    if (!clerkLoaded || !isSignedIn || !userId) return;
-    const currentUserId = userId;
-    let isMounted = true;
-    async function loadUserUnit() {
-      const client = supabase;
-      if (!client) return;
-      try {
-        const { data, error } = await client
-          .from("user_settings")
-          .select("preferred_unit")
-          .eq("user_id", currentUserId)
-          .maybeSingle();
-
-        if (error) {
-          console.warn("[Navbar] Error querying user_settings unit:", error.message);
-          return;
-        }
-
-        if (isMounted && data?.preferred_unit) {
-          const pref = data.preferred_unit;
-          if (pref === "kg" || pref === "lbs") {
-            toggleGlobalUnit(pref);
-            if (typeof window !== "undefined") {
-              try {
-                localStorage.setItem("hypertrophy-lab-unit", pref);
-              } catch {}
-            }
-          }
-        }
-      } catch (err) {
-        console.warn("[Navbar] Offline fallback for user_settings unit:", err);
-      }
-    }
-
-    loadUserUnit();
-    return () => {
-      isMounted = false;
-    };
-  }, [clerkLoaded, isSignedIn, userId, toggleGlobalUnit]);
-
-  // 2. On unit toggle (kg <-> lbs): Upsert into user_settings
-  const handleToggleUnit = useCallback(
-    async (targetUnit?: "kg" | "lbs") => {
-      const nextUnit: "kg" | "lbs" = targetUnit || (globalUnit === "kg" ? "lbs" : "kg");
-      toggleGlobalUnit(nextUnit);
-      if (typeof window !== "undefined") {
-        try {
-          localStorage.setItem("hypertrophy-lab-unit", nextUnit);
-        } catch {}
-      }
-
-      const client = supabase;
-      if (userId && client) {
-        try {
-          const { error } = await client
-            .from("user_settings")
-            .upsert(
-              {
-                user_id: userId,
-                preferred_unit: nextUnit,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "user_id" }
-            );
-          if (error) {
-            console.warn("[Navbar] Error upserting unit to user_settings:", error.message);
-          }
-        } catch (err) {
-          console.warn("[Navbar] Offline fallback saving unit:", err);
-        }
-      }
-    },
-    [userId, globalUnit, toggleGlobalUnit]
-  );
+  const { globalUnit } = useUnit();
 
   // Only show the floating banner when a session is active and NOT on /log
   const showSessionBanner = isActive && pathname !== "/log";

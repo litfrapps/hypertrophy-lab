@@ -77,37 +77,13 @@ const WorkoutContext = createContext<WorkoutContextValue | null>(null);
 
 export function WorkoutProvider({ children }: { children: ReactNode }) {
   const { globalUnit, convertWeight, getLastEntryForExercise } = useWorkouts();
-  const { exercises: sessionExercises, setExercises: setSessionExercises } =
-    useSession();
-
-  // ── Derived stats (memoised to prevent dropped frames on mobile) ────────────
-
-  const liveVolume = useMemo(
-    () =>
-      sessionExercises.reduce(
-        (sum, e) =>
-          sum +
-          e.sets
-            .filter((s) => s.completed)
-            .reduce((sSum, s) => sSum + s.reps * s.weight, 0),
-        0
-      ),
-    [sessionExercises]
-  );
-
-  const totalPlannedSets = useMemo(
-    () => sessionExercises.reduce((sum, e) => sum + e.sets.length, 0),
-    [sessionExercises]
-  );
-
-  const totalCompletedSets = useMemo(
-    () =>
-      sessionExercises.reduce(
-        (sum, e) => sum + e.sets.filter((s) => s.completed).length,
-        0
-      ),
-    [sessionExercises]
-  );
+  const {
+    exercises: sessionExercises,
+    setExercises: setSessionExercises,
+    liveVolume,
+    totalPlannedSets,
+    totalCompletedSets,
+  } = useSession();
 
   // ── Build initial sets using last-entry history ────────────────────────────
 

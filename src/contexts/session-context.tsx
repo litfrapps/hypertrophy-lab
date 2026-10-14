@@ -7,12 +7,12 @@ import {
   useRef,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from "react";
 import { Exercise, WorkoutSet } from "@/types";
 import { useUnit, UNIT_STORAGE_KEY } from "@/contexts/unit-context";
 import { useAuth } from "@clerk/nextjs";
-import { supabase } from "@/lib/supabase";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ const SessionContext = createContext<SessionContextValue | null>(null);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const { isLoaded: clerkLoaded, isSignedIn, userId } = useAuth();
+  const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
   const [isActive, setIsActive] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -66,26 +66,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [exercises, setExercises] = useState<SessionExerciseItem[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. On Clerk auth load / user login: Query preferred_unit from user_settings
+  // 1. On Clerk auth load / user login: Query preferred_unit from /api/settings
   useEffect(() => {
-    if (!clerkLoaded || !isSignedIn || !userId) return;
-    const currentUserId = userId;
+    if (!clerkLoaded || !isSignedIn) return;
 
     let isMounted = true;
     async function loadUserUnit() {
-      const client = supabase;
-      if (!client) return;
       try {
-        const { data, error } = await client
-          .from("user_settings")
-          .select("preferred_unit")
-          .eq("user_id", currentUserId)
-          .maybeSingle();
-
-        if (error) {
-          console.warn("[SessionContext] Error fetching unit from user_settings:", error.message);
-          return;
-        }
+        const res = await fetch("/api/settings");
+        if (!res.ok) return;
+        const data = await res.json();
 
         if (isMounted && data?.preferred_unit) {
           const pref = data.preferred_unit;
@@ -108,9 +98,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [clerkLoaded, isSignedIn, userId, setGlobalUnit]);
+  }, [clerkLoaded, isSignedIn, setGlobalUnit]);
 
-  // 2. On unit toggle: Upsert into user_settings
+  // 2. On unit toggle: Upsert into user_settings via /api/settings
   const setUnit = useCallback(
     (newUnit: "kg" | "lbs") => {
       setGlobalUnit(newUnit);
@@ -120,26 +110,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         } catch {}
       }
 
-      const client = supabase;
-      if (userId && client) {
-        client
-          .from("user_settings")
-          .upsert(
-            {
-              user_id: userId,
-              preferred_unit: newUnit,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id" }
-          )
-          .then(({ error }) => {
-            if (error) {
-              console.warn("[SessionContext] Error saving unit to Supabase:", error.message);
-            }
-          });
+      if (isSignedIn) {
+        fetch("/api/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preferred_unit: newUnit }),
+        }).catch((err) => {
+          console.warn("[SessionContext] Error saving unit to server:", err);
+        });
       }
     },
-    [userId, setGlobalUnit]
+    [isSignedIn, setGlobalUnit]
   );
 
   const toggleUnit = useCallback(
@@ -198,18 +179,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setExercises([]);
   }, []);
 
-  const totalPlannedSets = exercises.reduce((s, e) => s + e.sets.length, 0);
-  const totalCompletedSets = exercises.reduce(
-    (s, e) => s + e.sets.filter((set) => set.completed).length,
-    0
+  const totalPlannedSets = useMemo(
+    () => exercises.reduce((s, e) => s + e.sets.length, 0),
+    [exercises]
   );
-  const liveVolume = exercises.reduce(
-    (s, e) =>
-      s +
-      e.sets
-        .filter((set) => set.completed)
-        .reduce((ss, set) => ss + set.reps * set.weight, 0),
-    0
+  const totalCompletedSets = useMemo(
+    () => exercises.reduce((s, e) => s + e.sets.filter((set) => set.completed).length, 0),
+    [exercises]
+  );
+  const liveVolume = useMemo(
+    () =>
+      exercises.reduce(
+        (s, e) =>
+          s +
+          e.sets
+            .filter((set) => set.completed)
+            .reduce((ss, set) => ss + set.reps * set.weight, 0),
+        0
+      ),
+    [exercises]
   );
 
   return (

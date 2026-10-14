@@ -30,12 +30,16 @@ const STOP_WORDS = new Set([
  * Extracts high-value scientific search keywords from a conversational lifter prompt.
  */
 function extractSearchKeywords(query: string): string {
-  const sanitized = query
-    .replace(/[^\w\s-]/g, " ")
-    .split(/\s+/)
-    .filter((word) => word.length > 1 && !STOP_WORDS.has(word.toLowerCase()));
+  const normalized = query
+    .replace(/'s\b/gi, "")
+    .replace(/n't\b/gi, "")
+    .replace(/[^\w\s-]/g, " ");
 
-  return sanitized.join(" ").trim();
+  const words = normalized
+    .split(/\s+/)
+    .filter((word) => word.length > 2 && !STOP_WORDS.has(word.toLowerCase()));
+
+  return words.join(" ").trim();
 }
 
 /**
@@ -214,26 +218,18 @@ export async function searchPubMed(
 
     const clampedLimit = Math.max(1, Math.min(maxResults || 5, 10));
 
-    // 1. Try search with cleaned query first
-    const sanitizedQuery = trimmedQuery.replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
-    let pmids = await fetchPMIDs(sanitizedQuery, clampedLimit);
+    // 1. Try search with extracted key scientific terms first
+    const keywords = extractSearchKeywords(trimmedQuery);
+    const searchTarget = keywords || trimmedQuery.replace(/[^\w\s-]/g, " ").replace(/\s+/g, " ").trim();
+    let pmids = await fetchPMIDs(searchTarget, clampedLimit);
 
-    // 2. If 0 results returned, retry with extracted key terms
-    if (pmids.length === 0) {
-      const keywords = extractSearchKeywords(trimmedQuery);
-      if (keywords && keywords !== sanitizedQuery) {
-        pmids = await fetchPMIDs(keywords, clampedLimit);
-      }
-    }
-
-    // 3. If still empty and not explicitly about resistance training, try appending context
-    if (pmids.length === 0) {
-      const keywords = extractSearchKeywords(trimmedQuery);
+    // 2. If 0 results returned and query doesn't already contain resistance training context, enrich with hypertrophy domain keywords
+    if (pmids.length === 0 && searchTarget) {
       const isExerciseQuery = /hypertrophy|muscle|training|exercise|resistance|sets|reps|volume|protein|creatine/i.test(
-        trimmedQuery
+        searchTarget
       );
-      if (keywords && !isExerciseQuery) {
-        const enriched = `${keywords} hypertrophy resistance training`;
+      if (!isExerciseQuery) {
+        const enriched = `${searchTarget} hypertrophy resistance training`;
         pmids = await fetchPMIDs(enriched, clampedLimit);
       }
     }

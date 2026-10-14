@@ -11,7 +11,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { WorkoutLog, WorkoutSession, SavedRoutine } from "@/types";
-import { supabase } from "@/lib/supabase";
 
 export type { SavedRoutine };
 
@@ -311,61 +310,32 @@ export function useWorkouts() {
     syncSessions();
 
     // ──────────────────────────────────────────
-    // 2b. Sync Routines with Supabase
+    // 2b. Sync Routines with Server API
     // ──────────────────────────────────────────
     async function syncRoutines() {
-      const client = supabase;
-      const currentUserId = userId;
-      if (!client || !currentUserId) return;
       try {
-        const { data, error } = await client
-          .from("routines")
-          .select("*")
-          .eq("user_id", currentUserId);
+        const res = await fetch("/api/routines");
+        if (!res.ok) return;
 
-        if (error) {
-          console.warn("[useWorkouts] Supabase routines fetch error:", error.message);
-          return;
-        }
-
-        if (data && Array.isArray(data) && isMounted) {
-          interface DbRoutineRecord {
-            id: string | number;
-            user_id?: string;
-            name: string;
-            exercises?: unknown;
-            exercise_ids?: string[];
-          }
-          const remoteRoutines: SavedRoutine[] = (data as unknown as DbRoutineRecord[]).map((r) => ({
-            id: String(r.id),
-            name: r.name,
-            exerciseIds: Array.isArray(r.exercises)
-              ? (r.exercises as unknown[]).map((e) =>
-                  typeof e === "string"
-                    ? e
-                    : typeof e === "object" && e !== null && "id" in e
-                    ? String((e as { id: unknown }).id)
-                    : ""
-                )
-              : (r.exercise_ids ?? []),
-          }));
-
+        const remoteRoutines: SavedRoutine[] = await res.json();
+        if (Array.isArray(remoteRoutines) && isMounted) {
           const local = loadLocalRoutines();
           const remoteIds = new Set(remoteRoutines.map((r) => r.id));
           const unsynced = local.filter((r) => !remoteIds.has(r.id));
 
           if (unsynced.length > 0) {
-            unsynced.forEach(async (u) => {
-              try {
-                await client.from("routines").insert({
+            unsynced.forEach((u) => {
+              fetch("/api/routines", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
                   id: u.id,
-                  user_id: currentUserId,
                   name: u.name,
-                  exercises: u.exerciseIds,
-                });
-              } catch (err) {
+                  exerciseIds: u.exerciseIds,
+                }),
+              }).catch((err) => {
                 console.warn("[useWorkouts] Background sync error for routine:", u.id, err);
-              }
+              });
             });
           }
 
@@ -374,7 +344,7 @@ export function useWorkouts() {
           setSavedRoutines(merged);
         }
       } catch (err) {
-        console.warn("[useWorkouts] Offline fallback reading routines from Supabase:", err);
+        console.warn("[useWorkouts] Offline fallback reading routines from API:", err);
       }
     }
 
@@ -386,11 +356,22 @@ export function useWorkouts() {
   }, [clerkLoaded, isSignedIn, userId]);
 
   // ──────────────────────────────────────────
-  // Derived: flat list of all workout logs
+  // Pre-sorted sessions (newest first)
+  // ──────────────────────────────────────────
+  const sortedSessions = useMemo(
+    () =>
+      [...sessions].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    [sessions]
+  );
+
+  // ──────────────────────────────────────────
+  // Derived: flat list of all workout logs (newest first)
   // ──────────────────────────────────────────
   const workouts = useMemo<WorkoutLog[]>(() => {
-    return sessions.flatMap((s) => s.logs);
-  }, [sessions]);
+    return sortedSessions.flatMap((s) => s.logs);
+  }, [sortedSessions]);
 
   // ──────────────────────────────────────────
   // Derived: lifetime set counts per exercise
@@ -584,32 +565,21 @@ export function useWorkouts() {
     (exerciseId: string) =>
       workouts
         .filter((w) => w.exerciseId === exerciseId)
-        .sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-        ),
+        .slice()
+        .reverse(),
     [workouts]
   );
 
   const getRecentWorkouts = useCallback(
-    (limit = 10) =>
-      [...workouts]
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-        .slice(0, limit),
+    (limit = 10) => workouts.slice(0, limit),
     [workouts]
   );
 
   // Returns the most recent sets logged for an exercise (weight + reps + logged unit per set)
   const getLastEntryForExercise = useCallback(
     (exerciseId: string): { weight: number; reps: number; unit?: "kg" | "lbs" }[] | null => {
-      const entries = workouts
-        .filter((w) => w.exerciseId === exerciseId)
-        .sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-      if (entries.length === 0) return null;
-      const lastLog = entries[0];
+      const lastLog = workouts.find((w) => w.exerciseId === exerciseId);
+      if (!lastLog) return null;
       return lastLog.sets.map((s) => ({
         weight: s.weight,
         reps: s.reps,
@@ -640,15 +610,6 @@ export function useWorkouts() {
       });
     },
     [getWorkoutsForExercise, unitConvertWeight, globalUnit]
-  );
-
-  // Sorted sessions (newest first)
-  const sortedSessions = useMemo(
-    () =>
-      [...sessions].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      ),
-    [sessions]
   );
 
   // Legacy stubs for backwards compatibility
@@ -693,26 +654,23 @@ export function useWorkouts() {
       saveLocalRoutines(updated);
       setSavedRoutines(updated);
 
-      const client = supabase;
-      if (userId && client) {
-        try {
-          const { error } = await client.from("routines").insert({
+      if (isSignedIn) {
+        fetch("/api/routines", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             id: newRoutine.id,
-            user_id: userId,
             name: routineName,
-            exercises: routineExercises,
-          });
-          if (error) {
-            console.warn("[useWorkouts] Error inserting routine into Supabase:", error.message);
-          }
-        } catch (err) {
+            exerciseIds: routineExercises,
+          }),
+        }).catch((err) => {
           console.warn("[useWorkouts] Offline fallback inserting routine:", err);
-        }
+        });
       }
 
       return newRoutine;
     },
-    [userId]
+    [isSignedIn]
   );
 
   const updateRoutine = useCallback(
@@ -726,27 +684,20 @@ export function useWorkouts() {
       saveLocalRoutines(updated);
       setSavedRoutines(updated);
 
-      const client = supabase;
-      if (userId && client) {
-        try {
-          const { error } = await client
-            .from("routines")
-            .update({
-              name: routineName,
-              exercises: routineExercises,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", routineId)
-            .eq("user_id", userId);
-          if (error) {
-            console.warn("[useWorkouts] Error updating routine in Supabase:", error.message);
-          }
-        } catch (err) {
+      if (isSignedIn) {
+        fetch(`/api/routines/${routineId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: routineName,
+            exerciseIds: routineExercises,
+          }),
+        }).catch((err) => {
           console.warn("[useWorkouts] Offline fallback updating routine:", err);
-        }
+        });
       }
     },
-    [userId]
+    [isSignedIn]
   );
 
   const deleteRoutine = useCallback(
@@ -756,23 +707,15 @@ export function useWorkouts() {
       saveLocalRoutines(updated);
       setSavedRoutines(updated);
 
-      const client = supabase;
-      if (userId && client) {
-        try {
-          const { error } = await client
-            .from("routines")
-            .delete()
-            .eq("id", routineId)
-            .eq("user_id", userId);
-          if (error) {
-            console.warn("[useWorkouts] Error deleting routine from Supabase:", error.message);
-          }
-        } catch (err) {
+      if (isSignedIn) {
+        fetch(`/api/routines/${routineId}`, {
+          method: "DELETE",
+        }).catch((err) => {
           console.warn("[useWorkouts] Offline fallback deleting routine:", err);
-        }
+        });
       }
     },
-    [userId]
+    [isSignedIn]
   );
 
   return {

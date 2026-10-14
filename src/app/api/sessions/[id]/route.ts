@@ -95,17 +95,20 @@ export async function PATCH(
 
       if (upsertErr) {
         console.error("[PATCH /api/sessions/:id] log upsert:", upsertErr);
+        // Don't touch sets if the log upsert failed — avoids data loss
+        continue;
       }
 
-      // Replace sets for this log
-      await supabase.from("workout_sets").delete().eq("log_id", log.id);
-
+      // Build and validate the new sets payload before deleting the old ones
       const setsToInsert = (log.sets ?? []).map((s: WorkoutSet, idx: number) => ({
         log_id: log.id,
         set_number: s.setNumber || idx + 1,
         reps: Number(s.reps),
         weight: Number(s.weight),
       }));
+
+      // Replace sets only after we have a valid payload to insert
+      await supabase.from("workout_sets").delete().eq("log_id", log.id);
 
       if (setsToInsert.length > 0) {
         const { error: setsErr } = await supabase.from("workout_sets").insert(setsToInsert);
@@ -114,6 +117,7 @@ export async function PATCH(
         }
       }
     }
+
   } else if (date) {
     // If only date was provided without logs, propagate date to all logs
     const { error: logErr } = await supabase

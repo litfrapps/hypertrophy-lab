@@ -151,41 +151,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: sessErr.message }, { status: 500 });
   }
 
-  // Insert logs + sets for each log
-  for (const log of logs ?? []) {
-    const { error: logErr } = await supabase.from("workout_logs").insert({
-      id: log.id,
-      session_id: id,
-      user_id: userId,
-      date: log.date,
-      exercise_id: log.exerciseId,
-      exercise_name: log.exerciseName,
-      unit: log.unit ?? "kg",
-      notes: log.notes ?? null,
-    });
+  // Batch insert all logs then all sets (shortcut: not a true transaction; partial failure leaves orphan logs, upgrade to Supabase RPC if critical)
+  const logsToInsert = (logs ?? []).map((log: { id: string; date: string; exerciseId: string; exerciseName: string; unit?: string; notes?: string | null }) => ({
+    id: log.id,
+    session_id: id,
+    user_id: userId,
+    date: log.date,
+    exercise_id: log.exerciseId,
+    exercise_name: log.exerciseName,
+    unit: log.unit ?? "kg",
+    notes: log.notes ?? null,
+  }));
 
+  if (logsToInsert.length > 0) {
+    const { error: logErr } = await supabase.from("workout_logs").insert(logsToInsert);
     if (logErr) {
-      console.error("[POST /api/sessions] log insert:", logErr);
+      console.error("[POST /api/sessions] logs insert:", logErr);
       return NextResponse.json({ error: logErr.message }, { status: 500 });
     }
+  }
 
-    // Insert sets for this log
-    const setsToInsert = (log.sets ?? []).map((s: InputWorkoutSet) => ({
+  const setsToInsert = (logs ?? []).flatMap((log: { id: string; sets?: InputWorkoutSet[] }) =>
+    (log.sets ?? []).map((s: InputWorkoutSet) => ({
       log_id: log.id,
       set_number: s.setNumber,
       reps: s.reps,
       weight: s.weight,
-    }));
+    }))
+  );
 
-    if (setsToInsert.length > 0) {
-      const { error: setsErr } = await supabase
-        .from("workout_sets")
-        .insert(setsToInsert);
-
-      if (setsErr) {
-        console.error("[POST /api/sessions] sets insert:", setsErr);
-        return NextResponse.json({ error: setsErr.message }, { status: 500 });
-      }
+  if (setsToInsert.length > 0) {
+    const { error: setsErr } = await supabase.from("workout_sets").insert(setsToInsert);
+    if (setsErr) {
+      console.error("[POST /api/sessions] sets insert:", setsErr);
+      return NextResponse.json({ error: setsErr.message }, { status: 500 });
     }
   }
 
