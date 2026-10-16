@@ -68,7 +68,7 @@ export function ScrollingTimerPicker({
         {/* Header */}
         <div className="p-3.5 border-b border-border/60 flex items-center justify-between bg-secondary/30">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
               <Timer className="w-4 h-4" />
             </div>
             <div>
@@ -95,7 +95,7 @@ export function ScrollingTimerPicker({
         {/* Scrollable list with 15s intervals */}
         <div className="text-[11px] text-muted-foreground px-4 py-2 bg-secondary/10 border-b border-border/40 flex items-center justify-between">
           <span>Scroll to select interval (15s – 5:00)</span>
-          <span className="font-mono text-blue-400 font-bold">
+          <span className="font-mono text-primary font-bold">
             Current: {formatIntervalLabel(currentSeconds)}
           </span>
         </div>
@@ -119,7 +119,7 @@ export function ScrollingTimerPicker({
                 }}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all text-left ${
                   isSelected
-                    ? "bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20"
+                    ? "bg-primary text-white font-bold shadow-md shadow-primary/20"
                     : "hover:bg-secondary/70 text-foreground"
                 }`}
               >
@@ -142,7 +142,7 @@ export function ScrollingTimerPicker({
                       className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                         isSelected
                           ? "bg-white/20 text-white"
-                          : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                          : "bg-primary/10 text-primary border border-primary/20"
                       }`}
                     >
                       {tag}
@@ -163,7 +163,7 @@ export function ScrollingTimerPicker({
           <Button
             size="sm"
             onClick={onClose}
-            className="h-8 px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+            className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20"
           >
             Done
           </Button>

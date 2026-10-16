@@ -82,11 +82,6 @@ export function ExerciseInlineTimer({
   const secs = timeLeft % 60;
   const timeFormatted = `${mins}:${secs.toString().padStart(2, "0")}`;
 
-  const progressPercent =
-    durationSeconds > 0
-      ? ((durationSeconds - timeLeft) / durationSeconds) * 100
-      : 0;
-
   if (!isActive && !isRunning && !isFinished) {
     return null;
   }
@@ -95,47 +90,16 @@ export function ExerciseInlineTimer({
     <div
       className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-xs ${
         isFinished
-          ? "bg-green-500/20 border-green-500/50 text-green-400 animate-beacon-wave"
+          ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 animate-beacon-wave"
           : isRunning
-          ? "bg-blue-950/40 border-blue-500/40 text-blue-400 shadow-sm shadow-blue-500/10"
+          ? "bg-primary/10 border-primary/30 text-primary shadow-sm shadow-primary/5"
           : "bg-secondary/60 border-border text-muted-foreground"
       }`}
     >
-      {/* Mini SVG Progress Ring */}
-      <div className="relative w-4 h-4 shrink-0 flex items-center justify-center">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-          <circle
-            cx="18"
-            cy="18"
-            r="15"
-            className="stroke-secondary"
-            strokeWidth="4"
-            fill="none"
-          />
-          <circle
-            cx="18"
-            cy="18"
-            r="15"
-            className={`transition-all duration-300 ${
-              isFinished
-                ? "stroke-green-400"
-                : isRunning
-                ? "stroke-blue-400"
-                : "stroke-muted-foreground"
-            }`}
-            strokeWidth="4"
-            strokeDasharray="94.25"
-            strokeDashoffset={94.25 - (94.25 * progressPercent) / 100}
-            strokeLinecap="round"
-            fill="none"
-          />
-        </svg>
-      </div>
-
-      {/* Countdown Time */}
+      {/* Countdown Time / Status */}
       <div className="font-mono font-bold text-xs tracking-tight">
         {isFinished ? (
-          <span className="flex items-center gap-1 text-green-400">
+          <span className="flex items-center gap-1 text-emerald-400">
             <CheckCircle2 className="w-3.5 h-3.5 animate-check-pop" /> Next Set!
           </span>
         ) : (
