@@ -49,13 +49,13 @@ export function FloatingBanner({
       <div
         className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-card/95 backdrop-blur-md
                    border border-emerald-500/40 shadow-lg shadow-emerald-500/10
-                   hover:border-emerald-500/60 transition-all animate-fade-in-up"
+                   hover:border-emerald-500/60 active:scale-[0.98] transition-all duration-150 animate-fade-in-up"
         role="status"
         aria-live="polite"
       >
         {/* Pulsing dot */}
         <div
-          className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"
+          className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-beacon-wave shrink-0"
           aria-hidden="true"
         />
 

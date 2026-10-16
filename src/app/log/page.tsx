@@ -464,12 +464,12 @@ function WorkoutSessionManager() {
   // ─────────────────────────────────────────────────────────────────────────
   if (finishedSummary) {
     return (
-      <div className="max-w-xl mx-auto space-y-4 py-4 px-2 animate-fade-in-up">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/15 via-red-950/20 to-emerald-500/10 border border-emerald-500/30 p-5 text-center space-y-2.5">
-          <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400">
+      <div className="max-w-xl mx-auto space-y-4 py-4 px-2 animate-celebration">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/15 via-red-950/20 to-emerald-500/10 border border-emerald-500/30 p-5 text-center space-y-2.5 shadow-xl shadow-emerald-500/5">
+          <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center mx-auto text-emerald-400 animate-check-pop">
             <CheckCircle2 className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground font-display">
             Session Completed!
           </h1>
           <div className="text-xs text-primary font-mono flex items-center justify-center gap-1.5">
@@ -497,10 +497,11 @@ function WorkoutSessionManager() {
                 value: `${finishedSummary.totalVolume.toLocaleString()} ${globalUnit}`,
                 color: "text-cyan-400",
               },
-            ].map(({ label, value, color }) => (
+            ].map(({ label, value, color }, statIdx) => (
               <div
                 key={label}
-                className="bg-card/80 p-2.5 rounded-xl border border-border/50"
+                style={{ animationDelay: `${statIdx * 80}ms` }}
+                className="bg-card/80 p-2.5 rounded-xl border border-border/50 animate-stat-card"
               >
                 <div className="text-[10px] text-muted-foreground">{label}</div>
                 <div className={`text-base font-bold font-mono ${color}`}>{value}</div>

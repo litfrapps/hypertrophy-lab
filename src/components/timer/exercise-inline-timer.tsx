@@ -95,7 +95,7 @@ export function ExerciseInlineTimer({
     <div
       className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border transition-all text-xs ${
         isFinished
-          ? "bg-green-500/20 border-green-500/50 text-green-400 animate-pulse"
+          ? "bg-green-500/20 border-green-500/50 text-green-400 animate-beacon-wave"
           : isRunning
           ? "bg-blue-950/40 border-blue-500/40 text-blue-400 shadow-sm shadow-blue-500/10"
           : "bg-secondary/60 border-border text-muted-foreground"
@@ -136,7 +136,7 @@ export function ExerciseInlineTimer({
       <div className="font-mono font-bold text-xs tracking-tight">
         {isFinished ? (
           <span className="flex items-center gap-1 text-green-400">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Next Set!
+            <CheckCircle2 className="w-3.5 h-3.5 animate-check-pop" /> Next Set!
           </span>
         ) : (
           <span>{timeFormatted}</span>

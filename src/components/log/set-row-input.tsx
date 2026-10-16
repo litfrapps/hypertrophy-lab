@@ -103,13 +103,13 @@ export function SetRowInput({
             ? `Unmark set ${set.setNumber} as done`
             : `Mark set ${set.setNumber} as done`
         }
-        className={`h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 transition-all ${
+        className={`h-8 rounded-md text-xs font-bold flex items-center justify-center gap-1 active:scale-95 transition-all duration-150 ${
           isDone
-            ? "bg-green-600 hover:bg-green-700 text-white shadow-sm"
+            ? "bg-green-600 hover:bg-green-700 text-white shadow-sm shadow-green-500/20"
             : "bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border/60"
         }`}
       >
-        <Check className="w-3.5 h-3.5" />
+        <Check className={`w-3.5 h-3.5 ${isDone ? "animate-check-pop" : ""}`} />
         <span>{isDone ? "Done" : "Log"}</span>
       </button>
 

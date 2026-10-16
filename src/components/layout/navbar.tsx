@@ -415,13 +415,13 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center py-1 relative transition-all group",
+                  "flex flex-col items-center justify-center py-1 relative active:scale-95 transition-all duration-150 group",
                   isNavActive ? "text-[#FF1E27]" : "text-[#888890] hover:text-white"
                 )}
               >
                 <item.icon
                   className={cn(
-                    "w-4.5 h-4.5 transition-colors",
+                    "w-4.5 h-4.5 transition-transform duration-150 group-active:scale-90",
                     isNavActive ? "text-[#FF1E27]" : "text-[#888890] group-hover:text-white"
                   )}
                 />
