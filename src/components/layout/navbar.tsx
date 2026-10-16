@@ -7,9 +7,7 @@ import {
   Home,
   ClipboardList,
   Dumbbell,
-  BookOpen,
   LineChart,
-  Bot,
   Menu,
   X,
   LogIn,
@@ -43,13 +41,12 @@ export function MuscleLabBrandMark({ className = "w-5 h-5" }: { className?: stri
   );
 }
 
-// 5 Primary Mobile Bottom Tabs
+// 4 Primary Mobile Bottom Tabs
 const mobileBottomTabs = [
   { href: "/", label: "Home", icon: Home },
   { href: "/log", label: "Log", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/science", label: "Research", icon: BookOpen },
 ];
 
 // Desktop / Full Drawer Navigation Items
@@ -58,8 +55,6 @@ const navItems = [
   { href: "/log", label: "Log Workout", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/science", label: "Research", icon: BookOpen },
-  { href: "/ai", label: "AI Coach", icon: Bot },
 ];
 
 function fmtTime(s: number) {
@@ -408,7 +403,7 @@ export function Navbar() {
 
       {/* ─── MOBILE BOTTOM NAVIGATION BAR (Compact 56px height) ─────────────── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 h-14 bg-[#121215]/95 backdrop-blur-md border-t border-[#222226] z-50">
-        <div className="grid grid-cols-5 h-full">
+        <div className="grid grid-cols-4 h-full">
           {mobileBottomTabs.map((item) => {
             const isNavActive =
               item.href === "/"

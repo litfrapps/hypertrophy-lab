@@ -16,8 +16,6 @@ interface HealthReport {
   services: {
     clerk: ServiceResult;
     supabase: ServiceResult;
-    gemini: ServiceResult;
-    pubmed: ServiceResult;
   };
 }
 
@@ -91,88 +89,13 @@ async function checkSupabase(): Promise<ServiceResult> {
   }
 }
 
-// shortcut: validates env var format only, not live token generation; prevents billing from public pings
-function checkGemini(): ServiceResult {
-  const start = now();
-  const apiKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.GOOGLE_API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY;
-  const ok = Boolean(apiKey);
-  return {
-    ok,
-    latencyMs: Math.round(now() - start),
-    message: ok
-      ? `Gemini API key present (model: ${process.env.GEMINI_MODEL || "gemini-3.7-flash"})`
-      : "Missing GEMINI_API_KEY (or GOOGLE_API_KEY)",
-    keyHint: redactKey(apiKey),
-  };
-}
-
-async function checkPubMed(): Promise<ServiceResult> {
-  const start = now();
-  const ncbiKey = process.env.NCBI_API_KEY;
-
-  const url = new URL("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi");
-  url.searchParams.set("db", "pubmed");
-  url.searchParams.set("retmode", "json");
-  url.searchParams.set("retmax", "1");
-  url.searchParams.set("term", "hypertrophy");
-  url.searchParams.set("tool", "hypertrophy-lab");
-  url.searchParams.set("email", "hypertrophylab@example.com");
-  if (ncbiKey) url.searchParams.set("api_key", ncbiKey);
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-    const res = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      return {
-        ok: false,
-        latencyMs: Math.round(now() - start),
-        message: `NCBI E-utilities returned HTTP ${res.status}: ${res.statusText}`,
-        keyHint: redactKey(ncbiKey),
-      };
-    }
-
-    const data = await res.json() as { esearchresult?: { idlist?: string[] } };
-    const idList = data?.esearchresult?.idlist ?? [];
-    return {
-      ok: true,
-      latencyMs: Math.round(now() - start),
-      message: `PubMed E-utilities reachable — esearch returned ${idList.length} PMID(s)`,
-      keyHint: redactKey(ncbiKey),
-    };
-  } catch (err) {
-    const isTimeout =
-      err instanceof Error && (err.name === "AbortError" || err.message.includes("abort"));
-    return {
-      ok: false,
-      latencyMs: Math.round(now() - start),
-      message: isTimeout
-        ? "PubMed E-utilities check timed out after 8 s"
-        : err instanceof Error
-        ? err.message
-        : "PubMed connectivity check failed",
-      keyHint: redactKey(ncbiKey),
-    };
-  }
-}
-
 // ─── Route Handler ─────────────────────────────────────────────────────────────
 
 export async function GET() {
-  const [supabase, pubmed] = await Promise.all([checkSupabase(), checkPubMed()]);
+  const supabase = await checkSupabase();
   const clerk = checkClerk();
-  const gemini = checkGemini();
 
-  const services = { clerk, supabase, gemini, pubmed };
+  const services = { clerk, supabase };
   const results = Object.values(services);
   const okCount = results.filter((s) => s.ok).length;
 

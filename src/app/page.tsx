@@ -18,6 +18,7 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
+  LineChart,
 } from "lucide-react";
 import { WorkoutSession, WorkoutLog } from "@/types";
 
@@ -257,7 +258,7 @@ export default function DashboardPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#888890]" />
           <input
             type="text"
-            placeholder="Search exercises, programs, or articles..."
+            placeholder="Search exercises..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-[#121215] border border-[#222226] rounded-lg pl-9 pr-10 py-1.5 text-xs text-white placeholder:text-[#888890] focus:outline-none focus:border-[#FF1E27]/70 focus:ring-1 focus:ring-[#FF1E27]/50 transition-all"
@@ -432,8 +433,8 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Quick Action Cards (2-column prominent solid surface cards) */}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {/* Quick Action Cards (3-column prominent solid surface cards) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
               {/* Card 1: LOG WORKOUT */}
               <Link href="/log" className="group block h-full">
                 <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
@@ -469,6 +470,28 @@ export default function DashboardPage() {
                       </h3>
                       <p className="text-[10.5px] text-[#888890] mt-0.5 leading-snug">
                         Browse your exercise library.
+                      </p>
+                    </div>
+                    <div className="mt-3 flex items-center text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-1 transition-all">
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Card 3: TRACK PROGRESS */}
+              <Link href="/progress" className="group block h-full">
+                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
+                        <LineChart className="w-4 h-4 text-[#FF1E27]" />
+                      </div>
+                      <h3 className="font-display text-xs sm:text-sm font-bold tracking-wider text-white">
+                        TRACK PROGRESS
+                      </h3>
+                      <p className="text-[10.5px] text-[#888890] mt-0.5 leading-snug">
+                        Analyze load progression and volume.
                       </p>
                     </div>
                     <div className="mt-3 flex items-center text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-1 transition-all">
@@ -517,7 +540,7 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-xs font-bold text-white">No sessions yet</h3>
                 <p className="text-[11px] text-[#888890] mt-0.5 max-w-xs mx-auto">
-                  Start logging your training sessions to track scientific overload progress.
+                  Start logging your training sessions to track progressive overload.
                 </p>
                 <Link
                   href="/log"

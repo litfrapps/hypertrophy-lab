@@ -63,46 +63,6 @@ export interface ProgressDataPoint {
   topSet: number; // heaviest set
 }
 
-// --- Research Papers ---
-export interface ResearchPaper {
-  id: string;
-  title: string;
-  authors: string[];
-  year: number;
-  journal: string;
-  doi: string;
-  url: string;
-  abstract: string;
-  category: PaperCategory;
-  keyFindings: string[];
-}
-
-export type PaperCategory =
-  | "Volume"
-  | "Frequency"
-  | "Intensity"
-  | "Rest Periods"
-  | "Exercise Selection"
-  | "Periodization"
-  | "Muscle Growth"
-  | "Training to Failure"
-  | "Rep Ranges"
-  | "Nutrition";
-
-// --- AI Chat ---
-export interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  sources?: ChatSource[];
-  timestamp: string;
-}
-
-export interface ChatSource {
-  title: string;
-  url: string;
-  snippet: string;
-}
 
 // --- Rest Timer ---
 export interface TimerPreset {
