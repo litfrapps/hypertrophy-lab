@@ -433,71 +433,68 @@ export default function DashboardPage() {
               </span>
             </div>
 
-            {/* Quick Action Cards (3-column prominent solid surface cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            {/* Quick Action Cards (High-density responsive surface cards) */}
+            <div className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:gap-2.5">
               {/* Card 1: LOG WORKOUT */}
-              <Link href="/log" className="group block h-full">
-                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
-                        <Dumbbell className="w-4 h-4" />
-                      </div>
-                      <h3 className="font-display text-xs sm:text-sm font-bold tracking-wider text-white">
-                        LOG WORKOUT
-                      </h3>
-                      <p className="text-[10.5px] text-[#888890] mt-0.5 leading-snug">
-                        Track your sets, reps and progress.
-                      </p>
-                    </div>
-                    <div className="mt-3 flex items-center text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-1 transition-all">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
+              <Link
+                href="/log"
+                className="group flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/40 transition-colors"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                  <Dumbbell className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display text-xs font-bold tracking-wide uppercase text-white truncate">
+                    LOG WORKOUT
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">
+                    Track your sets, reps and progress.
+                  </p>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 ml-auto group-hover:border-primary/40 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </Link>
 
               {/* Card 2: VIEW EXERCISES */}
-              <Link href="/exercises" className="group block h-full">
-                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
-                        <DocumentIcon className="w-4 h-4 text-[#FF1E27]" />
-                      </div>
-                      <h3 className="font-display text-xs sm:text-sm font-bold tracking-wider text-white">
-                        VIEW EXERCISES
-                      </h3>
-                      <p className="text-[10.5px] text-[#888890] mt-0.5 leading-snug">
-                        Browse your exercise library.
-                      </p>
-                    </div>
-                    <div className="mt-3 flex items-center text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-1 transition-all">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
+              <Link
+                href="/exercises"
+                className="group flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/40 transition-colors"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                  <DocumentIcon className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display text-xs font-bold tracking-wide uppercase text-white truncate">
+                    VIEW EXERCISES
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">
+                    Browse your exercise library.
+                  </p>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 ml-auto group-hover:border-primary/40 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </Link>
 
               {/* Card 3: TRACK PROGRESS */}
-              <Link href="/progress" className="group block h-full">
-                <div className="relative overflow-hidden rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/30 transition-colors p-3.5 sm:p-4 h-full">
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:border-[#FF1E27] transition-all">
-                        <LineChart className="w-4 h-4 text-[#FF1E27]" />
-                      </div>
-                      <h3 className="font-display text-xs sm:text-sm font-bold tracking-wider text-white">
-                        TRACK PROGRESS
-                      </h3>
-                      <p className="text-[10.5px] text-[#888890] mt-0.5 leading-snug">
-                        Analyze load progression and volume.
-                      </p>
-                    </div>
-                    <div className="mt-3 flex items-center text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-1 transition-all">
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
+              <Link
+                href="/progress"
+                className="group flex items-center gap-2.5 sm:gap-3 p-3 sm:p-3.5 rounded-xl bg-[#121215] border border-[#222226] hover:border-primary/40 transition-colors"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+                  <LineChart className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display text-xs font-bold tracking-wide uppercase text-white truncate">
+                    TRACK PROGRESS
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">
+                    Analyze load progression and volume.
+                  </p>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary border border-primary/20 flex items-center justify-center shrink-0 ml-auto group-hover:border-primary/40 transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-primary group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </Link>
             </div>
