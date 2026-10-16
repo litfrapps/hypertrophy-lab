@@ -313,10 +313,21 @@
 
 /* Tactile mobile press utility */
 .tap-bounce {
-  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, opacity 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .tap-bounce:active {
   transform: scale(0.96);
+}
+
+/* Fluid mobile touch interaction defaults */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"],
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* ── Accessibility: Prefers Reduced Motion ── */

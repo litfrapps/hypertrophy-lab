@@ -38,7 +38,7 @@ import { SessionHeader } from "@/components/log/session-header";
 import { SetRowInput } from "@/components/log/set-row-input";
 import { RoutineSelector, type SavedRoutine } from "@/components/log/routine-selector";
 import { WorkoutCalendar } from "@/components/log/workout-calendar";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Play,
   Check,
@@ -590,14 +590,20 @@ function WorkoutSessionManager() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {sessionExercises.map((item, exIdx) => {
-              const primaryColors = muscleGroupColors[item.exercise.primaryMuscle];
+            <AnimatePresence mode="popLayout">
+              {sessionExercises.map((item, exIdx) => {
+                const primaryColors = muscleGroupColors[item.exercise.primaryMuscle];
 
-              return (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden transition-all"
-                >
+                return (
+                  <motion.div
+                    key={item.id}
+                    layout
+                    initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0, overflow: "hidden", transition: { duration: 0.2 } }}
+                    transition={{ layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } }}
+                    className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden transition-colors"
+                  >
                   {/* Exercise card header */}
                   <div className="px-3 py-2.5 border-b border-border/40 bg-secondary/20 flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -722,9 +728,10 @@ function WorkoutSessionManager() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
+          </AnimatePresence>
 
             {/* Bottom action row */}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">

@@ -22,6 +22,7 @@ import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { useSession } from "@/contexts/session-context";
 import { useUnit } from "@/contexts/unit-context";
 import { FloatingBanner } from "@/components/log/floating-banner";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Stylized Electric Crimson "M" brand mark for Muscle Lab
 export function MuscleLabBrandMark({ className = "w-5 h-5" }: { className?: string }) {
@@ -296,114 +297,129 @@ export function Navbar() {
       </header>
 
       {/* ─── MOBILE SLIDE-OUT MENU DRAWER ────────────────────────────────────── */}
-      {mobileOpen && (
-        <>
-          <div
-            className="lg:hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40 transition-opacity"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div className="lg:hidden fixed top-14 left-0 right-0 bottom-0 bg-[#121215] border-t border-[#222226] z-40 overflow-y-auto animate-fade-in-up">
-            <nav className="p-3.5 space-y-1">
-              {navItems.map((item) => {
-                const isNavActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all",
-                      isNavActive
-                        ? "bg-[#2B0A0C] text-[#FF1E27] border-l-2 border-[#FF1E27]"
-                        : "text-[#888890] hover:text-white hover:bg-[#16161a]"
-                    )}
-                  >
-                    <item.icon className="w-4.5 h-4.5 text-current" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+      {/* ─── MOBILE SLIDE-OUT MENU DRAWER ────────────────────────────────────── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              key="mobile-drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed inset-0 bg-black/75 backdrop-blur-sm z-40"
+              onClick={() => setMobileOpen(false)}
+            />
+            <motion.div
+              key="mobile-drawer-panel"
+              initial={{ opacity: 0, y: -14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              className="lg:hidden fixed top-14 left-0 right-0 bottom-0 bg-[#121215] border-t border-[#222226] z-40 overflow-y-auto"
+            >
+              <nav className="p-3.5 space-y-1">
+                {navItems.map((item) => {
+                  const isNavActive =
+                    item.href === "/"
+                      ? pathname === "/"
+                      : pathname.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold tracking-wide transition-all active:scale-[0.98]",
+                        isNavActive
+                          ? "bg-[#2B0A0C] text-[#FF1E27] border-l-2 border-[#FF1E27]"
+                          : "text-[#888890] hover:text-white hover:bg-[#16161a]"
+                      )}
+                    >
+                      <item.icon className="w-4.5 h-4.5 text-current" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
 
-              {/* Weight Unit Preference */}
-              <div className="pt-2.5 pb-1 border-t border-[#222226] mt-2.5">
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#16161a] border border-[#222226]">
-                  <div className="flex items-center gap-2">
-                    <Scale className="w-3.5 h-3.5 text-[#FF1E27]" />
-                    <div>
-                      <div className="text-xs font-semibold text-white">Weight Unit</div>
-                      <p className="text-[10px] text-[#888890]">Global display unit</p>
+                {/* Weight Unit Preference */}
+                <div className="pt-2.5 pb-1 border-t border-[#222226] mt-2.5">
+                  <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#16161a] border border-[#222226]">
+                    <div className="flex items-center gap-2">
+                      <Scale className="w-3.5 h-3.5 text-[#FF1E27]" />
+                      <div>
+                        <div className="text-xs font-semibold text-white">Weight Unit</div>
+                        <p className="text-[10px] text-[#888890]">Global display unit</p>
+                      </div>
+                    </div>
+                    <div className="flex bg-[#08080a] rounded-md p-0.5 text-xs h-7 items-center border border-[#222226]">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleUnit("kg")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer active:scale-95",
+                          globalUnit === "kg"
+                            ? "bg-[#FF1E27] text-white shadow-sm"
+                            : "text-[#888890] hover:text-white"
+                        )}
+                      >
+                        kg
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleUnit("lbs")}
+                        className={cn(
+                          "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer active:scale-95",
+                          globalUnit === "lbs"
+                            ? "bg-[#FF1E27] text-white shadow-sm"
+                            : "text-[#888890] hover:text-white"
+                        )}
+                      >
+                        lbs
+                      </button>
                     </div>
                   </div>
-                  <div className="flex bg-[#08080a] rounded-md p-0.5 text-xs h-7 items-center border border-[#222226]">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleUnit("kg")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
-                        globalUnit === "kg"
-                          ? "bg-[#FF1E27] text-white shadow-sm"
-                          : "text-[#888890] hover:text-white"
-                      )}
-                    >
-                      kg
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleUnit("lbs")}
-                      className={cn(
-                        "px-2.5 py-0.5 rounded font-semibold transition-all h-5.5 text-[11px] cursor-pointer",
-                        globalUnit === "lbs"
-                          ? "bg-[#FF1E27] text-white shadow-sm"
-                          : "text-[#888890] hover:text-white"
-                      )}
-                    >
-                      lbs
-                    </button>
-                  </div>
                 </div>
-              </div>
 
-              {/* Auth Buttons */}
-              <div className="pt-3 border-t border-[#222226] mt-2.5">
-                <Show when="signed-out">
-                  <div className="space-y-2">
-                    <SignInButton mode="modal">
-                      <button
-                        onClick={() => setMobileOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold font-display uppercase tracking-wider bg-[#FF1E27] hover:bg-[#d6111a] text-white transition-colors"
-                      >
-                        <LogIn className="w-3.5 h-3.5" />
-                        Sign In
-                      </button>
-                    </SignInButton>
-                    <SignUpButton mode="modal">
-                      <button
-                        onClick={() => setMobileOpen(false)}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border border-[#222226] bg-[#16161a] hover:bg-[#1f1f26] text-white transition-colors"
-                      >
-                        <UserPlus className="w-3.5 h-3.5 text-[#888890]" />
-                        Create Account
-                      </button>
-                    </SignUpButton>
-                  </div>
-                </Show>
-                <Show when="signed-in">
-                  <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#16161a] border border-[#222226]">
-                    <UserButton showName />
-                  </div>
-                </Show>
-              </div>
-            </nav>
-          </div>
-        </>
-      )}
+                {/* Auth Buttons */}
+                <div className="pt-3 border-t border-[#222226] mt-2.5">
+                  <Show when="signed-out">
+                    <div className="space-y-2">
+                      <SignInButton mode="modal">
+                        <button
+                          onClick={() => setMobileOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold font-display uppercase tracking-wider bg-[#FF1E27] hover:bg-[#d6111a] text-white transition-all active:scale-[0.98]"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          Sign In
+                        </button>
+                      </SignInButton>
+                      <SignUpButton mode="modal">
+                        <button
+                          onClick={() => setMobileOpen(false)}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold border border-[#222226] bg-[#16161a] hover:bg-[#1f1f26] text-white transition-all active:scale-[0.98]"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-[#888890]" />
+                          Create Account
+                        </button>
+                      </SignUpButton>
+                    </div>
+                  </Show>
+                  <Show when="signed-in">
+                    <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#16161a] border border-[#222226]">
+                      <UserButton showName />
+                    </div>
+                  </Show>
+                </div>
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* ─── MOBILE BOTTOM NAVIGATION BAR (Compact 56px height) ─────────────── */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 h-14 bg-[#121215]/95 backdrop-blur-md border-t border-[#222226] z-50">
-        <div className="grid grid-cols-4 h-full">
+        <div className="grid grid-cols-4 h-full relative">
           {mobileBottomTabs.map((item) => {
             const isNavActive =
               item.href === "/"
@@ -415,28 +431,32 @@ export function Navbar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center justify-center py-1 relative active:scale-95 transition-all duration-150 group",
+                  "flex flex-col items-center justify-center py-1 relative active:scale-90 transition-transform duration-100 ease-out group select-none",
                   isNavActive ? "text-[#FF1E27]" : "text-[#888890] hover:text-white"
                 )}
               >
                 <item.icon
                   className={cn(
-                    "w-4.5 h-4.5 transition-transform duration-150 group-active:scale-90",
+                    "w-4.5 h-4.5 transition-colors duration-150",
                     isNavActive ? "text-[#FF1E27]" : "text-[#888890] group-hover:text-white"
                   )}
                 />
                 <span
                   className={cn(
-                    "text-[9.5px] font-medium tracking-tight mt-0.5",
+                    "text-[9.5px] font-medium tracking-tight mt-0.5 transition-colors",
                     isNavActive ? "text-white font-semibold" : "text-[#888890]"
                   )}
                 >
                   {item.label}
                 </span>
 
-                {/* Active Red Underline Indicator Bar directly beneath selected tab */}
+                {/* Fluid Sliding Red Pill Indicator beneath active tab */}
                 {isNavActive && (
-                  <span className="w-5 h-0.5 bg-[#FF1E27] rounded-full mt-0.5 animate-in fade-in zoom-in-95 duration-200" />
+                  <motion.span
+                    layoutId="mobileActiveBottomTab"
+                    className="absolute bottom-1 w-6 h-0.5 bg-[#FF1E27] rounded-full shadow-[0_0_8px_rgba(255,30,39,0.8)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                  />
                 )}
               </Link>
             );
@@ -445,15 +465,17 @@ export function Navbar() {
       </nav>
 
       {/* Floating Active Session Banner (Above bottom bar) */}
-      {showSessionBanner && (
-        <FloatingBanner
-          elapsedSeconds={elapsedSeconds}
-          exerciseCount={sessionExercises.length}
-          firstExerciseName={sessionExercises[0]?.exercise.name}
-          liveVolume={liveVolume}
-          unit={globalUnit}
-        />
-      )}
+      <AnimatePresence>
+        {showSessionBanner && (
+          <FloatingBanner
+            elapsedSeconds={elapsedSeconds}
+            exerciseCount={sessionExercises.length}
+            firstExerciseName={sessionExercises[0]?.exercise.name}
+            liveVolume={liveVolume}
+            unit={globalUnit}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }

@@ -63,7 +63,7 @@ export function SessionHeader({
             onClick={onOpenDateModal}
             className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-secondary/70
                        hover:bg-secondary border border-border/50 text-xs text-muted-foreground
-                       hover:text-foreground transition-colors whitespace-nowrap"
+                       hover:text-foreground active:scale-95 select-none transition-all whitespace-nowrap"
             title="Adjust session date & time"
             aria-label="Adjust session date and time"
           >
@@ -87,7 +87,7 @@ export function SessionHeader({
                 key={u}
                 type="button"
                 onClick={() => setUnit(u)}
-                className={`px-3 py-1 rounded-md font-semibold transition-all h-7 ${
+                className={`px-3 py-1 rounded-md font-semibold transition-all h-7 active:scale-95 select-none ${
                   unit === u
                     ? "bg-primary text-white shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
@@ -106,7 +106,7 @@ export function SessionHeader({
               onClick={onCancelClick}
               className="h-9 w-9 flex items-center justify-center rounded-lg border border-border/50
                          text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10
-                         hover:border-destructive/30 transition-colors"
+                         hover:border-destructive/30 active:scale-95 select-none transition-all"
               title="Cancel workout — discard all sets"
               aria-label="Cancel workout"
             >
@@ -117,7 +117,7 @@ export function SessionHeader({
               onClick={onFinishClick}
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold
-                         text-xs h-9 px-3 rounded-lg shadow-sm whitespace-nowrap"
+                         text-xs h-9 px-3 rounded-lg shadow-sm whitespace-nowrap active:scale-95 transition-all"
             >
               <Check className="w-3.5 h-3.5 mr-1" /> Finish
             </Button>

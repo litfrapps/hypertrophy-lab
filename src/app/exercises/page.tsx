@@ -17,6 +17,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 function ExercisesContent() {
   const searchParams = useSearchParams();
@@ -204,7 +206,7 @@ function ExercisesContent() {
         <button
           type="button"
           onClick={() => handleMuscleSelect(null)}
-          className={`text-[11px] px-2 py-0.5 rounded-md font-medium transition-colors shrink-0 cursor-pointer flex items-center gap-1 ${
+          className={`text-[11px] px-2 py-0.5 rounded-md font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1 active:scale-95 select-none ${
             selectedMuscle === null
               ? "bg-primary text-white font-semibold shadow-sm shadow-primary/20"
               : "bg-[#121215] text-muted-foreground hover:text-white hover:bg-[#1a1a22] border-0"
@@ -224,7 +226,7 @@ function ExercisesContent() {
               key={muscle}
               type="button"
               onClick={() => handleMuscleSelect(muscle)}
-              className={`text-[11px] px-2 py-0.5 rounded-md font-medium transition-colors shrink-0 cursor-pointer flex items-center gap-1 ${
+              className={`text-[11px] px-2 py-0.5 rounded-md font-medium transition-all shrink-0 cursor-pointer flex items-center gap-1 active:scale-95 select-none ${
                 isActive
                   ? "bg-primary text-white font-semibold shadow-sm shadow-primary/20"
                   : "bg-[#121215] text-muted-foreground hover:text-white hover:bg-[#1a1a22] border-0"
@@ -264,7 +266,7 @@ function ExercisesContent() {
           <button
             type="button"
             onClick={handleExpandAll}
-            className="px-2 py-0.5 text-[11px] text-muted-foreground hover:text-white hover:bg-[#121215] rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2 py-0.5 text-[11px] text-muted-foreground hover:text-white hover:bg-[#121215] rounded font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
           >
             <ChevronsUpDown className="w-3 h-3 text-primary" />
             <span>Expand All</span>
@@ -273,7 +275,7 @@ function ExercisesContent() {
           <button
             type="button"
             onClick={handleCollapseAll}
-            className="px-2 py-0.5 text-[11px] text-muted-foreground hover:text-white hover:bg-[#121215] rounded font-medium flex items-center gap-1 transition-colors cursor-pointer"
+            className="px-2 py-0.5 text-[11px] text-muted-foreground hover:text-white hover:bg-[#121215] rounded font-medium flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
           >
             <Minimize2 className="w-2.5 h-2.5 text-muted-foreground" />
             <span>Collapse All</span>
@@ -337,75 +339,85 @@ function ExercisesContent() {
                     <span className="text-[11px] font-medium hidden sm:inline">
                       {isExpanded ? "Collapse" : "Expand"}
                     </span>
-                    {isExpanded ? (
-                      <ChevronUp className="w-4 h-4 transition-transform duration-200" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 transition-transform duration-200" />
-                    )}
+                    <ChevronDown
+                      className={cn(
+                        "w-4 h-4 transition-transform duration-200 ease-out",
+                        isExpanded ? "rotate-180 text-primary" : "text-muted-foreground"
+                      )}
+                    />
                   </div>
                 </button>
 
                 {/* Accordion Body: Clean, Edge-to-Edge Row Items */}
-                {isExpanded && (
-                  <div className="pt-1 pb-1">
-                    <div className="divide-y divide-white/5 sm:grid sm:grid-cols-2 sm:divide-y-0 sm:gap-1.5">
-                      {exs.map((exercise) => {
-                        const primaryColors =
-                          muscleGroupColors[exercise.primaryMuscle] || {
-                            bg: "bg-muted",
-                            text: "text-muted-foreground",
-                          };
-                        const secondaryColors =
-                          muscleGroupColors[exercise.secondaryMuscle] || {
-                            bg: "bg-muted",
-                            text: "text-muted-foreground",
-                          };
+                <AnimatePresence initial={false}>
+                  {isExpanded && (
+                    <motion.div
+                      key={`accordion-${muscle}`}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden pt-1 pb-1"
+                    >
+                      <div className="divide-y divide-white/5 sm:grid sm:grid-cols-2 sm:divide-y-0 sm:gap-1.5">
+                        {exs.map((exercise) => {
+                          const primaryColors =
+                            muscleGroupColors[exercise.primaryMuscle] || {
+                              bg: "bg-muted",
+                              text: "text-muted-foreground",
+                            };
+                          const secondaryColors =
+                            muscleGroupColors[exercise.secondaryMuscle] || {
+                              bg: "bg-muted",
+                              text: "text-muted-foreground",
+                            };
 
-                        return (
-                          <Link
-                            key={exercise.id}
-                            href={`/log?exercise=${exercise.id}`}
-                            className="group block p-2 sm:p-2.5 rounded-lg hover:bg-[#121215] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <h3 className="font-semibold text-xs sm:text-sm text-white group-hover:text-primary transition-colors truncate">
-                                  {exercise.name}
-                                </h3>
-                                <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                                  <span className="truncate">{exercise.equipment}</span>
-                                  <span className="text-white/20">•</span>
-                                  <span
-                                    className={`text-[10px] font-medium ${primaryColors.text}`}
-                                  >
-                                    {exercise.primaryMuscle}
+                          return (
+                            <Link
+                              key={exercise.id}
+                              href={`/log?exercise=${exercise.id}`}
+                              className="group block p-2 sm:p-2.5 rounded-lg hover:bg-[#121215] active:scale-[0.99] transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-xs sm:text-sm text-white group-hover:text-primary transition-colors truncate">
+                                    {exercise.name}
+                                  </h3>
+                                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                                    <span className="truncate">{exercise.equipment}</span>
+                                    <span className="text-white/20">•</span>
+                                    <span
+                                      className={`text-[10px] font-medium ${primaryColors.text}`}
+                                    >
+                                      {exercise.primaryMuscle}
+                                    </span>
+                                    {exercise.secondaryMuscle && (
+                                      <>
+                                        <span className="text-white/20">•</span>
+                                        <span
+                                          className={`text-[10px] opacity-75 ${secondaryColors.text}`}
+                                        >
+                                          {exercise.secondaryMuscle}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
+                                  <span className="text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity hidden xs:inline">
+                                    Log
                                   </span>
-                                  {exercise.secondaryMuscle && (
-                                    <>
-                                      <span className="text-white/20">•</span>
-                                      <span
-                                        className={`text-[10px] opacity-75 ${secondaryColors.text}`}
-                                      >
-                                        {exercise.secondaryMuscle}
-                                      </span>
-                                    </>
-                                  )}
+                                  <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                                 </div>
                               </div>
-
-                              <div className="flex items-center gap-1.5 shrink-0 text-muted-foreground group-hover:text-primary transition-colors">
-                                <span className="text-[11px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity hidden xs:inline">
-                                  Log
-                                </span>
-                                <ChevronRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
-                              </div>
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </section>
             );
           })}

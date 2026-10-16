@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Check, Timer } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ScrollingTimerPickerProps {
   isOpen: boolean;
@@ -54,18 +55,28 @@ export function ScrollingTimerPicker({
     }
   }, [isOpen, currentSeconds]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in-up">
-      <div
-        className="fixed inset-0"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+            onClick={onClose}
+            aria-hidden="true"
+          />
 
-      <div className="relative w-full max-w-sm bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh]">
-        {/* Header */}
+          <motion.div
+            initial={{ y: "100%", opacity: 0.8 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            className="relative w-full max-w-sm bg-card border border-border/80 rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[75vh]"
+          >
+            {/* Header */}
         <div className="p-3.5 border-b border-border/60 flex items-center justify-between bg-secondary/30">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
@@ -168,7 +179,9 @@ export function ScrollingTimerPicker({
             Done
           </Button>
         </div>
-      </div>
+      </motion.div>
     </div>
+  )}
+</AnimatePresence>
   );
 }
