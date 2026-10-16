@@ -343,7 +343,7 @@ export function SessionDetailDialog({
                   </div>
                   {log.sets.map((set, setIdx) => (
                     <div
-                      key={setIdx}
+                      key={set.id || `${log.id || logIdx}-set-${setIdx}`}
                       className="grid grid-cols-[30px_1fr_1fr_30px] gap-2 items-center"
                     >
                       <span className="text-xs text-muted-foreground font-mono text-center">

@@ -161,9 +161,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           timerActive: false,
           timerKey: 0,
           sets: [
-            { setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
-            { setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
-            { setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
+            { id: `set-init-1-${now}`, setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
+            { id: `set-init-2-${now}`, setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
+            { id: `set-init-3-${now}`, setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
           ],
         }))
       );

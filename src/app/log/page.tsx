@@ -38,6 +38,7 @@ import { SessionHeader } from "@/components/log/session-header";
 import { SetRowInput } from "@/components/log/set-row-input";
 import { RoutineSelector, type SavedRoutine } from "@/components/log/routine-selector";
 import { WorkoutCalendar } from "@/components/log/workout-calendar";
+import { AnimatePresence } from "framer-motion";
 import {
   Play,
   Check,
@@ -667,12 +668,11 @@ function WorkoutSessionManager() {
 
                   {/* Sets table */}
                   <div className="p-2.5 sm:p-3 space-y-1.5">
-                    <div className="grid grid-cols-[26px_1fr_1fr_64px_24px] gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-1">
+                    <div className="grid grid-cols-[26px_1fr_1fr_64px] gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-1">
                       <span>Set</span>
                       <span className="text-center">{unit}</span>
                       <span className="text-center">Reps</span>
                       <span className="text-center">Done</span>
-                      <span />
                     </div>
 
                     <div
@@ -680,23 +680,29 @@ function WorkoutSessionManager() {
                       role="table"
                       aria-label={`Sets for ${item.exercise.name}`}
                     >
-                      {item.sets.map((set, setIdx) => (
-                        <SetRowInput
-                          key={setIdx}
-                          set={set}
-                          setIndex={setIdx}
-                          unit={unit}
-                          isOnlySet={item.sets.length <= 1}
-                          onWeightChange={(v) => updateSetValues(item.id, setIdx, "weight", v)}
-                          onRepsChange={(v) => updateSetValues(item.id, setIdx, "reps", v)}
-                          onToggleComplete={() =>
-                            toggleSetComplete(item.id, setIdx, () =>
-                              setInvalidSetAlertOpen(true)
-                            )
-                          }
-                          onRemove={() => removeSetFromExercise(item.id, setIdx)}
-                        />
-                      ))}
+                      <AnimatePresence mode="popLayout">
+                        {item.sets.map((set, setIdx) => {
+                          const setId = set.id || `${item.id}-set-${setIdx}-${set.setNumber}`;
+                          return (
+                            <SetRowInput
+                              key={setId}
+                              set={{ ...set, id: setId }}
+                              setIndex={setIdx}
+                              unit={unit}
+                              isOnlySet={item.sets.length <= 1}
+                              onWeightChange={(v) => updateSetValues(item.id, setIdx, "weight", v)}
+                              onRepsChange={(v) => updateSetValues(item.id, setIdx, "reps", v)}
+                              onToggleComplete={() =>
+                                toggleSetComplete(item.id, setIdx, () =>
+                                  setInvalidSetAlertOpen(true)
+                                )
+                              }
+                              onRemove={() => removeSetFromExercise(item.id, setIdx)}
+                              onDeleteSet={() => removeSetFromExercise(item.id, setIdx)}
+                            />
+                          );
+                        })}
+                      </AnimatePresence>
                     </div>
 
                     <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-border/30">

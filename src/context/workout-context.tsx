@@ -92,6 +92,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
       const last = getLastEntryForExercise(exercise.id);
       if (last && last.length > 0) {
         return last.map((s, idx) => ({
+          id: `set-${exercise.id}-${idx + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           setNumber: idx + 1,
           reps: s.reps,
           weight: convertWeight(s.weight, s.unit || "kg", globalUnit),
@@ -100,9 +101,9 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
         }));
       }
       return [
-        { setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
-        { setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
-        { setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
+        { id: `set-${exercise.id}-1-${Date.now()}-1`, setNumber: 1, reps: 0, weight: 0, unit: globalUnit, completed: false },
+        { id: `set-${exercise.id}-2-${Date.now()}-2`, setNumber: 2, reps: 0, weight: 0, unit: globalUnit, completed: false },
+        { id: `set-${exercise.id}-3-${Date.now()}-3`, setNumber: 3, reps: 0, weight: 0, unit: globalUnit, completed: false },
       ];
     },
     [getLastEntryForExercise, convertWeight, globalUnit]
@@ -117,6 +118,7 @@ export function WorkoutProvider({ children }: { children: ReactNode }) {
           if (item.id !== itemId) return item;
           const lastSet = item.sets[item.sets.length - 1];
           const newSet: SessionExerciseSet = {
+            id: `set-${itemId}-${item.sets.length + 1}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
             setNumber: item.sets.length + 1,
             reps: lastSet ? lastSet.reps : 0,
             weight: lastSet ? lastSet.weight : 0,

@@ -37,7 +37,7 @@ Used actively during training sessions (mobile, one hand, loud gym). Reviewed af
 ## Brand Commitments
 
 - **Color**: Dark Charcoal + Electric Crimson — `#08080a` background, `#FF1E27` primary accent. Non-negotiable.
-- **Typography**: Orbitron (heading / display); Inter (body). Non-negotiable.
+- **Typography**: Orbitron (heading / display); Barlow Condensed (body). Non-negotiable.
 - **Layout**: Mobile-first; bottom 4-tab navigation on mobile, sidebar on desktop.
 
 ## Evidence on Hand

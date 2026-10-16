@@ -30,6 +30,7 @@ export interface Exercise {
 
 // --- Workout Logging ---
 export interface WorkoutSet {
+  id?: string;
   setNumber: number;
   reps: number;
   weight: number;
