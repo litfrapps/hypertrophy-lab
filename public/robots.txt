@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hypertrophy-lab-ten.vercel.app/sitemap.xml

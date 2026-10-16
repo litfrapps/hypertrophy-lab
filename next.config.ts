@@ -12,6 +12,19 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Vary",
+            value: "Accept",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

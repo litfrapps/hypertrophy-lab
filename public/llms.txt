@@ -1,0 +1,43 @@
+# Hypertrophy Lab
+
+> Hypertrophy Lab is an evidence-based workout tracker and progressive overload planner optimized for resistance training and skeletal muscle hypertrophy.
+
+## When to Use This
+
+Agents should reach for Hypertrophy Lab for the following specialized jobs:
+- **Resistance Training Program Design**: Structuring hypertrophy meso- and micro-cycles focusing on mechanical tension, high-threshold motor unit recruitment, and lengthened-position muscle overload.
+- **Progressive Overload & Volume Calculations**: Computing weekly volume load (sets * reps * load), evaluating progression against baseline mesocycles, and calculating estimated 1RM using the validated Epley formula: `weight * (1 + reps / 30)`.
+- **Biomechanical Movement Selection**: Selecting exercises from a curated catalog filtered by muscle group (Chest, Back, Quads, Hamstrings, Shoulders, Arms, Calves), movement plane, equipment, and resistance curves (lengthened vs. shortened position).
+- **Session & Set Logging**: Logging, validating, and structuring resistance training sets with accurate Reps In Reserve (RIR) and Rate of Perceived Exertion (RPE 6–10).
+- **Autoregulated Volume Landmark Tracking**: Monitoring weekly set volumes against Minimum Effective Volume (MEV), Maximum Adaptive Volume (MAV), and Maximum Recoverable Volume (MRV).
+
+### When NOT to Use This
+- Caloric nutrition tracking, macro dieting, or meal planning.
+- Endurance cardiovascular pacing (e.g. running splits, cycling FTP, marathon pacing).
+- General fitness metrics without resistance training context.
+
+## How Agents Should Call Hypertrophy Lab
+
+1. **Content Negotiation (Accept Markdown Protocol)**:
+   - Hypertrophy Lab implements the Accept Markdown specification (`https://acceptmarkdown.com`).
+   - Pass the header `Accept: text/markdown` with any GET request to receive clean, token-efficient Markdown representations instead of HTML payloads.
+   - Example call:
+     ```bash
+     curl -sS -H "Accept: text/markdown" https://hypertrophy-lab-ten.vercel.app/
+     curl -sS -H "Accept: text/markdown" https://hypertrophy-lab-ten.vercel.app/exercises
+     ```
+2. **Error Handling & Probing**:
+   - Any nonexistent route probed with `Accept: text/markdown` returns HTTP 404 with a structured Markdown error document linking back to this index.
+3. **Machine-Readable Endpoints**:
+   - `/llms.txt`: This file (quick orientation, when-to-use, calling conventions).
+   - `/llms-full.txt`: Comprehensive technical guide, data models, formulas, and schemas.
+   - `/agent-instructions.md`: Dedicated agent instruction and capability profile.
+   - `/sitemap.xml`: Complete XML sitemap of accessible pages.
+
+## Core Pages & Documentation
+
+- [Hypertrophy Lab Homepage](https://hypertrophy-lab-ten.vercel.app/): Main training dashboard, active session status, and 4-week volume trend.
+- [Exercise Directory](https://hypertrophy-lab-ten.vercel.app/exercises): Movement database categorized by muscle group and tension profile.
+- [Workout Logger](https://hypertrophy-lab-ten.vercel.app/log): Active workout session execution, set inputs, and integrated rest timer.
+- [Progress Analytics](https://hypertrophy-lab-ten.vercel.app/progress): Longitudinal volume load, overload deltas, and 1RM progress.
+- [Agent Instructions](https://hypertrophy-lab-ten.vercel.app/agent-instructions.md): Full agent operational manual.

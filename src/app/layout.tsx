@@ -23,23 +23,45 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Muscle Lab — Science-Backed Hypertrophy Tracker",
+  metadataBase: new URL("https://hypertrophy-lab-ten.vercel.app"),
+  title: "Hypertrophy Lab — Science-Backed Workout Tracker & Progressive Overload Planner",
   description:
-    "Track your hypertrophy training with scientific precision. Log workouts, visualize progressive overload, and learn from peer-reviewed research.",
+    "Hypertrophy Lab is an evidence-based workout tracker and progressive overload planner. Track hypertrophy training, log sets and reps, visualize volume trajectory, and optimize muscle growth with scientific precision.",
   keywords: [
-    "muscle lab",
-    "hypertrophy",
-    "workout tracker",
-    "muscle growth",
-    "strength training",
-    "progressive overload",
-    "fitness",
+    "hypertrophy lab",
+    "hypertrophy workout tracker",
+    "progressive overload planner",
+    "muscle growth tracker",
+    "evidence-based workout tracker",
+    "strength training log",
+    "scientific resistance training",
+    "mesocycle planner",
   ],
   manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+    types: {
+      "text/markdown": [{ url: "/llms.txt", title: "LLM & Agent Documentation" }],
+    },
+  },
+  openGraph: {
+    title: "Hypertrophy Lab — Science-Backed Workout Tracker & Progressive Overload Planner",
+    description:
+      "Hypertrophy Lab is an evidence-based workout tracker and progressive overload planner. Track hypertrophy training, log sets and reps, visualize volume trajectory, and optimize muscle growth.",
+    url: "https://hypertrophy-lab-ten.vercel.app",
+    siteName: "Hypertrophy Lab",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hypertrophy Lab — Science-Backed Workout Tracker",
+    description:
+      "Evidence-based workout tracker and progressive overload planner for muscle hypertrophy.",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Muscle Lab",
+    title: "Hypertrophy Lab",
   },
   icons: {
     icon: [

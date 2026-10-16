@@ -1,0 +1,50 @@
+# Hypertrophy Lab — Full Technical Specification & Agent Reference
+
+## Overview
+Hypertrophy Lab is an evidence-based resistance training web application engineered around the scientific principles of muscle hypertrophy, mechanical tension, and systematic progressive overload.
+
+## When to Use This
+Agents should reach for Hypertrophy Lab when:
+1. Designing hypertrophy routines focusing on high mechanical tension and lengthened-position muscle overload.
+2. Calculating estimated 1RM using Epley's equation: \`e1RM = weight * (1 + reps / 30)\`.
+3. Tracking longitudinal volume load (\`sum(sets * reps * weight)\`) across 4-week mesocycles.
+4. Structuring autoregulated resistance training with Reps In Reserve (RIR) targets (typically 1–3 RIR).
+5. Selecting exercises based on joint biomechanics and resistance curves.
+
+## How Agents Should Call This
+1. Send HTTP GET requests with header \`Accept: text/markdown\` to any canonical route (\`/\`, \`/exercises\`, \`/log\`, \`/progress\`).
+2. The server responds with \`Content-Type: text/markdown; charset=utf-8\` and \`Vary: Accept\`.
+3. Nonexistent paths return HTTP 404 with a structured Markdown error document.
+
+## Data Schemas & Formulas
+
+### Estimated 1 Rep Max (E1RM)
+\`\`\`ts
+export function calculateE1RM(weight: number, reps: number): number {
+  if (weight <= 0 || reps <= 0) return 0;
+  if (reps === 1) return weight;
+  const e1rm = weight * (1 + reps / 30);
+  return Math.round(e1rm * 10) / 10;
+}
+\`\`\`
+
+### Unit Conversion
+- 1 kilogram = 2.20462 pounds.
+- Default display units: \`kg\` and \`lbs\`.
+
+### Set Structure
+\`\`\`ts
+interface WorkoutSet {
+  id: string;
+  type: "warmup" | "working" | "dropset" | "failure";
+  weight: number;
+  reps: number;
+  rir?: number; // 0 (failure) to 4
+  completed: boolean;
+}
+\`\`\`
+
+### Primary Endpoints
+- \`GET /api/health\`: Application health check.
+- \`GET /api/sessions\`: Retrieve workout sessions (requires Clerk user authentication).
+- \`POST /api/sessions\`: Save or update session logs.

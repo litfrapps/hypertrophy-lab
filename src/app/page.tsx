@@ -296,12 +296,10 @@ export default function DashboardPage() {
                 WELCOME BACK,
               </p>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight mt-1 leading-[1.18]">
-                Train Smarter.
-                <br />
-                Build More.
+                Hypertrophy Lab — Train Smarter. Build More.
               </h1>
               <p className="text-xs text-[#888890] mt-1.5 leading-relaxed font-normal">
-                Your progress matters. Let&apos;s keep building.
+                Science-backed workout tracker and progressive overload planner. Log sets, calculate RIR, track volume trajectories, and optimize hypertrophy with scientific precision.
               </p>
 
               {/* Red decorative accent slash */}
@@ -672,6 +670,47 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {/* ── 5. HYPERTROPHY TRAINING METHODOLOGY (Semantic raw HTML) ───────── */}
+          <section className="rounded-xl bg-[#121215] border border-[#222226] p-4 text-[#888890] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#222226]">
+              <h2 className="font-display text-xs font-bold tracking-[0.16em] text-white uppercase">
+                HYPERTROPHY TRAINING METHODOLOGY
+              </h2>
+              <span className="text-[9.5px] font-mono text-[#FF1E27] tracking-wider uppercase font-semibold">
+                EVIDENCE-BASED
+              </span>
+            </div>
+            <p className="text-xs leading-relaxed">
+              Hypertrophy Lab is engineered specifically for resistance training lifters, athletes, and coaches prioritizing mechanical tension, systematic progressive overload, and autoregulated volume landmarks. Unlike generic fitness trackers, Hypertrophy Lab focuses on the physiological drivers of skeletal muscle hypertrophy:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-0.5 text-xs">
+              <div className="bg-[#16161a] border border-[#222226] rounded-lg p-2.5 space-y-1">
+                <h3 className="font-display text-[10.5px] font-bold text-white uppercase tracking-wider">
+                  Mechanical Tension &amp; RIR
+                </h3>
+                <p className="text-[11px] text-[#888890] leading-relaxed">
+                  Train in proximity to failure (1–3 Reps in Reserve / RPE 7–9.5) to recruit high-threshold motor units across lengthened-position movements.
+                </p>
+              </div>
+              <div className="bg-[#16161a] border border-[#222226] rounded-lg p-2.5 space-y-1">
+                <h3 className="font-display text-[10.5px] font-bold text-white uppercase tracking-wider">
+                  Progressive Overload
+                </h3>
+                <p className="text-[11px] text-[#888890] leading-relaxed">
+                  Track longitudinal volume load and compute estimated 1RM using the scientific Epley equation to ensure progressive stimulus each mesocycle.
+                </p>
+              </div>
+              <div className="bg-[#16161a] border border-[#222226] rounded-lg p-2.5 space-y-1">
+                <h3 className="font-display text-[10.5px] font-bold text-white uppercase tracking-wider">
+                  Autoregulated Volume
+                </h3>
+                <p className="text-[11px] text-[#888890] leading-relaxed">
+                  Structure weekly set volume between Minimum Effective Volume (MEV) and Maximum Recoverable Volume (MRV) to optimize muscle protein synthesis.
+                </p>
+              </div>
+            </div>
+          </section>
         </div>
 
         {/* ─── DESKTOP RIGHT-HAND SIDE PANEL (Compact & Crisp) ───────────────── */}
@@ -682,9 +721,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pb-2.5 border-b border-[#222226]">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-[#FF1E27]" />
-                <h3 className="font-display text-xs font-bold tracking-[0.14em] text-white uppercase">
+                <h2 className="font-display text-xs font-bold tracking-[0.14em] text-white uppercase">
                   TODAY&apos;S FOCUS
-                </h3>
+                </h2>
               </div>
               <span className="font-display text-[8.5px] font-bold text-[#FF1E27] bg-[#2B0A0C] border border-[#FF1E27]/30 px-1.5 py-0.5 rounded uppercase tracking-wider">
                 HYPERTROPHY
@@ -760,9 +799,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pb-2.5 border-b border-[#222226]">
               <div className="flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-[#FF1E27]" />
-                <h3 className="font-display text-xs font-bold tracking-[0.14em] text-white uppercase">
+                <h2 className="font-display text-xs font-bold tracking-[0.14em] text-white uppercase">
                   RECENT PROGRESS
-                </h3>
+                </h2>
               </div>
               <span
                 className={`font-display text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
