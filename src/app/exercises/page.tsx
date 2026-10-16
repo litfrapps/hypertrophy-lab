@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { exercises, muscleGroups, muscleGroupColors } from "@/lib/exercises";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-export default function ExercisesPage() {
-  const [search, setSearch] = useState("");
+function ExercisesContent() {
+  const searchParams = useSearchParams();
+  const qParam = searchParams.get("q") ?? "";
+  const [search, setSearch] = useState(qParam);
+
+  // Sync URL ?q param into controlled search state (URL is external).
+  useEffect(() => {
+    if (qParam) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSearch(qParam);
+    }
+  }, [qParam]);
+
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
 
   // Interactive state map tracking expanded/collapsed state for each muscle group
@@ -400,5 +412,13 @@ export default function ExercisesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ExercisesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Loading exercises…</div>}>
+      <ExercisesContent />
+    </Suspense>
   );
 }

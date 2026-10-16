@@ -14,9 +14,20 @@
  * standard middleware export shape that the framework expects.
  */
 
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-export default clerkMiddleware();
+const isProtectedApiRoute = createRouteMatcher([
+  "/api/sessions(.*)",
+  "/api/logs(.*)",
+  "/api/routines(.*)",
+  "/api/settings(.*)",
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedApiRoute(req)) {
+    await auth.protect();
+  }
+});
 
 // ── Matcher config ─────────────────────────────────────────────────────────────
 // Skip Next.js internals and static files so the middleware only runs on

@@ -38,11 +38,8 @@ export {
   type WeightUnit,
 };
 
-export function calculateE1RM(weight: number, reps: number): number {
-  if (weight <= 0 || reps <= 0) return 0;
-  if (reps === 1) return weight;
-  return Math.round(weight * (1 + reps / 30) * 10) / 10;
-}
+import { calculateE1RM } from "@/lib/calculations";
+export { calculateE1RM };
 
 export function getLogE1RM(log: WorkoutLog): number {
   if (!log.sets || log.sets.length === 0) return 0;
@@ -52,34 +49,71 @@ export function getLogE1RM(log: WorkoutLog): number {
   return calculateE1RM(topSet.weight, topSet.reps);
 }
 
-const STORAGE_KEY = "hypertrophy-lab-sessions";
+const BASE_STORAGE_KEY = "hypertrophy-lab-sessions";
 const LEGACY_STORAGE_KEY = "hypertrophy-lab-workouts";
 export const ROUTINES_STORAGE_KEY = "muscle_lab_custom_routines";
 const LEGACY_ROUTINES_KEY = "hypertrophy_custom_routines";
 
+const getStorageKey = (userId?: string | null) =>
+  userId ? `${BASE_STORAGE_KEY}-${userId}` : `${BASE_STORAGE_KEY}-guest`;
+const getRoutinesKey = (userId?: string | null) =>
+  userId ? `${ROUTINES_STORAGE_KEY}-${userId}` : `${ROUTINES_STORAGE_KEY}-guest`;
+const getDeletedKey = (userId?: string | null) =>
+  userId ? `hypertrophy-lab-deleted-${userId}` : "hypertrophy-lab-deleted-guest";
+
+// ──────────────────────────────────────────
+// Offline Deletion Tracking Helpers
+// ──────────────────────────────────────────
+export function loadDeletedSessionIds(userId?: string | null): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(getDeletedKey(userId));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch {}
+  return new Set();
+}
+
+export function markSessionDeleted(sessionId: string, userId?: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const set = loadDeletedSessionIds(userId);
+    set.add(sessionId);
+    localStorage.setItem(getDeletedKey(userId), JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
+export function unmarkSessionDeleted(sessionId: string, userId?: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const set = loadDeletedSessionIds(userId);
+    set.delete(sessionId);
+    localStorage.setItem(getDeletedKey(userId), JSON.stringify(Array.from(set)));
+  } catch {}
+}
+
 // ──────────────────────────────────────────
 // Routine LocalStorage Persistence Helpers
 // ──────────────────────────────────────────
-export function loadLocalRoutines(): SavedRoutine[] {
+export function loadLocalRoutines(userId?: string | null): SavedRoutine[] {
   if (typeof window === "undefined") return [];
+  const key = getRoutinesKey(userId);
 
   try {
-    const raw = localStorage.getItem(ROUTINES_STORAGE_KEY);
+    let raw = localStorage.getItem(key);
+    // Backward-compatibility: migrate un-scoped routines
+    if (!raw) {
+      const legacy = localStorage.getItem(ROUTINES_STORAGE_KEY) || localStorage.getItem(LEGACY_ROUTINES_KEY);
+      if (legacy) {
+        localStorage.setItem(key, legacy);
+        raw = legacy;
+      }
+    }
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;
-    }
-
-    const legacy = localStorage.getItem(LEGACY_ROUTINES_KEY);
-    if (legacy) {
-      const parsed = JSON.parse(legacy);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        saveLocalRoutines(parsed);
-        try {
-          localStorage.removeItem(LEGACY_ROUTINES_KEY);
-        } catch {}
-        return parsed;
-      }
     }
   } catch (err) {
     console.warn("[useWorkouts] Failed to read routines from localStorage:", err);
@@ -88,13 +122,13 @@ export function loadLocalRoutines(): SavedRoutine[] {
   return [];
 }
 
-export function saveLocalRoutines(routines: SavedRoutine[]) {
+export function saveLocalRoutines(routines: SavedRoutine[], userId?: string | null) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(ROUTINES_STORAGE_KEY, JSON.stringify(routines));
+    localStorage.setItem(getRoutinesKey(userId), JSON.stringify(routines));
     setTimeout(() => {
       window.dispatchEvent(
-        new CustomEvent("hypertrophy-routines-updated", { detail: routines })
+        new CustomEvent("hypertrophy-routines-updated", { detail: { routines, userId } })
       );
     }, 0);
   } catch (err) {
@@ -103,13 +137,23 @@ export function saveLocalRoutines(routines: SavedRoutine[]) {
 }
 
 // ──────────────────────────────────────────
-// LocalStorage Persistence Helpers
+// Session LocalStorage Persistence Helpers
 // ──────────────────────────────────────────
-function loadLocalSessions(): WorkoutSession[] {
+export function loadLocalSessions(userId?: string | null): WorkoutSession[] {
   if (typeof window === "undefined") return [];
+  const key = getStorageKey(userId);
 
   try {
-    const rawSessions = localStorage.getItem(STORAGE_KEY);
+    let rawSessions = localStorage.getItem(key);
+    // Backward-compatibility: migrate un-scoped sessions once
+    if (!rawSessions) {
+      const legacy = localStorage.getItem(BASE_STORAGE_KEY);
+      if (legacy) {
+        localStorage.setItem(key, legacy);
+        rawSessions = legacy;
+      }
+    }
+
     if (rawSessions) {
       const parsed = JSON.parse(rawSessions);
       if (Array.isArray(parsed)) return parsed;
@@ -122,16 +166,16 @@ function loadLocalSessions(): WorkoutSession[] {
       if (Array.isArray(legacyLogs) && legacyLogs.length > 0) {
         const sessionMap = new Map<string, WorkoutLog[]>();
         for (const log of legacyLogs) {
-          const key = log.sessionId || log.date.slice(0, 10);
-          if (!sessionMap.has(key)) sessionMap.set(key, []);
-          sessionMap.get(key)!.push(log);
+          const k = log.sessionId || log.date.slice(0, 10);
+          if (!sessionMap.has(k)) sessionMap.set(k, []);
+          sessionMap.get(k)!.push(log);
         }
-        const convertedSessions: WorkoutSession[] = Array.from(sessionMap.entries()).map(([key, groupLogs]) => ({
-          id: groupLogs[0]?.sessionId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : key),
+        const convertedSessions: WorkoutSession[] = Array.from(sessionMap.entries()).map(([k, groupLogs]) => ({
+          id: groupLogs[0]?.sessionId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : k),
           date: groupLogs[0]?.date || new Date().toISOString(),
           logs: groupLogs,
         }));
-        saveLocalSessions(convertedSessions);
+        saveLocalSessions(convertedSessions, userId);
         try {
           localStorage.removeItem(LEGACY_STORAGE_KEY);
         } catch {}
@@ -145,14 +189,14 @@ function loadLocalSessions(): WorkoutSession[] {
   return [];
 }
 
-function saveLocalSessions(sessions: WorkoutSession[]) {
+export function saveLocalSessions(sessions: WorkoutSession[], userId?: string | null) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    localStorage.setItem(getStorageKey(userId), JSON.stringify(sessions));
     // Asynchronously dispatch outside of current React render cycle
     setTimeout(() => {
       window.dispatchEvent(
-        new CustomEvent("hypertrophy-sessions-updated", { detail: sessions })
+        new CustomEvent("hypertrophy-sessions-updated", { detail: { sessions, userId } })
       );
     }, 0);
   } catch (err) {
@@ -177,42 +221,55 @@ export function useWorkouts() {
   const [isOffline, setIsOffline] = useState(false);
 
   // ──────────────────────────────────────────
-  // 1. Initial Load: Immediate local hydration & sync across instances
+  // 1. Initial Load: Immediate local hydration scoped to active user
   // ──────────────────────────────────────────
+  // localStorage is an external system; reading it on userId change is the
+  // canonical use-case the effect rule explicitly permits.
   useEffect(() => {
-    const cachedSessions = loadLocalSessions();
-    if (cachedSessions.length > 0) {
-      setTimeout(() => {
-        setSessions(cachedSessions);
-      }, 0);
-    }
+    const cachedSessions = loadLocalSessions(userId);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessions(cachedSessions);
 
-    const cachedRoutines = loadLocalRoutines();
-    if (cachedRoutines.length > 0) {
-      setTimeout(() => {
-        setSavedRoutines(cachedRoutines);
-      }, 0);
-    }
-  }, []);
+    const cachedRoutines = loadLocalRoutines(userId);
+    setSavedRoutines(cachedRoutines);
+  }, [userId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleSync = (e: Event) => {
-      const customEvent = e as CustomEvent<WorkoutSession[]>;
-      if (customEvent.detail && Array.isArray(customEvent.detail)) {
-        setSessions(customEvent.detail);
+      const customEvent = e as CustomEvent<
+        { sessions: WorkoutSession[]; userId?: string | null } | WorkoutSession[]
+      >;
+      if (customEvent.detail) {
+        if (Array.isArray(customEvent.detail)) {
+          setSessions(customEvent.detail);
+        } else if (
+          customEvent.detail.sessions &&
+          (!customEvent.detail.userId || customEvent.detail.userId === userId)
+        ) {
+          setSessions(customEvent.detail.sessions);
+        }
       } else {
-        const cached = loadLocalSessions();
+        const cached = loadLocalSessions(userId);
         if (cached.length > 0) setSessions(cached);
       }
     };
 
     const handleRoutineSync = (e: Event) => {
-      const customEvent = e as CustomEvent<SavedRoutine[]>;
-      if (customEvent.detail && Array.isArray(customEvent.detail)) {
-        setSavedRoutines(customEvent.detail);
+      const customEvent = e as CustomEvent<
+        { routines: SavedRoutine[]; userId?: string | null } | SavedRoutine[]
+      >;
+      if (customEvent.detail) {
+        if (Array.isArray(customEvent.detail)) {
+          setSavedRoutines(customEvent.detail);
+        } else if (
+          customEvent.detail.routines &&
+          (!customEvent.detail.userId || customEvent.detail.userId === userId)
+        ) {
+          setSavedRoutines(customEvent.detail.routines);
+        }
       } else {
-        const cached = loadLocalRoutines();
+        const cached = loadLocalRoutines(userId);
         if (cached.length > 0) setSavedRoutines(cached);
       }
     };
@@ -227,7 +284,7 @@ export function useWorkouts() {
       window.removeEventListener("storage", handleSync);
       window.removeEventListener("storage", handleRoutineSync);
     };
-  }, []);
+  }, [userId]);
 
   // ──────────────────────────────────────────
   // 2. Sync with Supabase (if signed in and online)
@@ -235,9 +292,9 @@ export function useWorkouts() {
   useEffect(() => {
     if (!clerkLoaded) return;
 
-    // If not signed in, operate locally from localStorage
+    // If not signed in, operate locally from user/guest localStorage
     if (!isSignedIn) {
-      const cached = loadLocalSessions();
+      const cached = loadLocalSessions(userId);
       setTimeout(() => {
         setSessions(cached);
         setIsLoaded(true);
@@ -255,7 +312,7 @@ export function useWorkouts() {
           // Supabase is unconfigured — gracefully operate in offline localStorage mode
           if (isMounted) {
             setIsOffline(true);
-            const cached = loadLocalSessions();
+            const cached = loadLocalSessions(userId);
             if (cached.length > 0) setSessions(cached);
           }
           return;
@@ -273,9 +330,23 @@ export function useWorkouts() {
         if (Array.isArray(remoteSessions) && isMounted) {
           setIsOffline(false);
 
-          const local = loadLocalSessions();
-          const remoteIds = new Set(remoteSessions.map((s) => s.id));
-          const unsynced = local.filter((s) => !remoteIds.has(s.id));
+          const deletedIds = loadDeletedSessionIds(userId);
+          const validRemote = remoteSessions.filter((s) => !deletedIds.has(s.id));
+
+          // Retry any pending server deletions that occurred while offline
+          if (deletedIds.size > 0) {
+            deletedIds.forEach((delId) => {
+              fetch(`/api/sessions/${delId}`, { method: "DELETE" })
+                .then((r) => {
+                  if (r.ok || r.status === 404) unmarkSessionDeleted(delId, userId);
+                })
+                .catch(() => {});
+            });
+          }
+
+          const local = loadLocalSessions(userId);
+          const remoteIds = new Set(validRemote.map((s) => s.id));
+          const unsynced = local.filter((s) => !remoteIds.has(s.id) && !deletedIds.has(s.id));
 
           // Background sync: Upload local sessions that don't exist on server yet
           if (unsynced.length > 0) {
@@ -290,8 +361,8 @@ export function useWorkouts() {
             });
           }
 
-          const merged = [...unsynced, ...remoteSessions];
-          saveLocalSessions(merged);
+          const merged = [...unsynced, ...validRemote];
+          saveLocalSessions(merged, userId);
           setSessions(merged);
         }
       } catch (err) {
@@ -299,7 +370,7 @@ export function useWorkouts() {
         console.warn("[useWorkouts] Supabase/API unavailable, running in offline localStorage mode:", err);
         if (isMounted) {
           setIsOffline(true);
-          const cached = loadLocalSessions();
+          const cached = loadLocalSessions(userId);
           if (cached.length > 0) setSessions(cached);
         }
       } finally {
@@ -319,7 +390,7 @@ export function useWorkouts() {
 
         const remoteRoutines: SavedRoutine[] = await res.json();
         if (Array.isArray(remoteRoutines) && isMounted) {
-          const local = loadLocalRoutines();
+          const local = loadLocalRoutines(userId);
           const remoteIds = new Set(remoteRoutines.map((r) => r.id));
           const unsynced = local.filter((r) => !remoteIds.has(r.id));
 
@@ -340,7 +411,7 @@ export function useWorkouts() {
           }
 
           const merged = [...unsynced, ...remoteRoutines];
-          saveLocalRoutines(merged);
+          saveLocalRoutines(merged, userId);
           setSavedRoutines(merged);
         }
       } catch (err) {
@@ -404,9 +475,9 @@ export function useWorkouts() {
   // ──────────────────────────────────────────
   const addSession = useCallback(async (newSession: WorkoutSession) => {
     // 1. Always save to local state and localStorage immediately
-    const current = loadLocalSessions();
+    const current = loadLocalSessions(userId);
     const updated = [newSession, ...current.filter((s) => s.id !== newSession.id)];
-    saveLocalSessions(updated);
+    saveLocalSessions(updated, userId);
     setSessions(updated);
     setIsSaving(true);
 
@@ -437,31 +508,36 @@ export function useWorkouts() {
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [userId]);
 
   // ──────────────────────────────────────────
   // Delete an entire session (+ all its logs)
   // ──────────────────────────────────────────
   const deleteSession = useCallback(async (sessionId: string) => {
-    // 1. Remove from state and localStorage immediately
-    const current = loadLocalSessions();
+    // 1. Mark as pending deletion so server sync doesn't resurrect it
+    markSessionDeleted(sessionId, userId);
+
+    // 2. Remove from state and localStorage immediately
+    const current = loadLocalSessions(userId);
     const updated = current.filter((s) => s.id !== sessionId);
-    saveLocalSessions(updated);
+    saveLocalSessions(updated, userId);
     setSessions(updated);
 
-    // 2. Try to sync deletion to server
+    // 3. Try to sync deletion to server
     try {
       const res = await fetch(`/api/sessions/${sessionId}`, {
         method: "DELETE",
       });
       if (res.status === 503) return; // unconfigured
-      if (!res.ok && res.status !== 404) {
+      if (res.ok || res.status === 404) {
+        unmarkSessionDeleted(sessionId, userId);
+      } else {
         console.warn(`[useWorkouts] Server deleteSession returned HTTP ${res.status}`);
       }
     } catch (err) {
       console.warn("[useWorkouts] Could not sync deleteSession to server (offline):", err);
     }
-  }, []);
+  }, [userId]);
 
   // ──────────────────────────────────────────
   // Update an entire session's logs (inline editing)
@@ -472,11 +548,11 @@ export function useWorkouts() {
       return;
     }
 
-    const current = loadLocalSessions();
+    const current = loadLocalSessions(userId);
     const updated = current.map((s) =>
       s.id === updatedSession.id ? updatedSession : s
     );
-    saveLocalSessions(updated);
+    saveLocalSessions(updated, userId);
     setSessions(updated);
 
     try {
@@ -492,7 +568,7 @@ export function useWorkouts() {
     } catch (err) {
       console.warn("[useWorkouts] Could not sync updateSession to server (offline):", err);
     }
-  }, [deleteSession]);
+  }, [deleteSession, userId]);
 
   // ──────────────────────────────────────────
   // Update date/time for a session
@@ -500,7 +576,7 @@ export function useWorkouts() {
   const updateSessionDateTime = useCallback(
     async (sessionId: string, newDateISO: string) => {
       // 1. Update state and localStorage immediately
-      const current = loadLocalSessions();
+      const current = loadLocalSessions(userId);
       const updated = current.map((s) =>
         s.id === sessionId
           ? {
@@ -510,7 +586,7 @@ export function useWorkouts() {
           }
           : s
       );
-      saveLocalSessions(updated);
+      saveLocalSessions(updated, userId);
       setSessions(updated);
 
       // 2. Try to sync update to server
@@ -528,7 +604,7 @@ export function useWorkouts() {
         console.warn("[useWorkouts] Could not sync updateSessionDateTime to server (offline):", err);
       }
     },
-    []
+    [userId]
   );
 
   // ──────────────────────────────────────────
@@ -536,14 +612,14 @@ export function useWorkouts() {
   // ──────────────────────────────────────────
   const deleteWorkout = useCallback(async (logId: string) => {
     // 1. Remove log from state and localStorage immediately
-    const current = loadLocalSessions();
+    const current = loadLocalSessions(userId);
     const updated = current
       .map((s) => ({
         ...s,
         logs: s.logs.filter((l) => l.id !== logId),
       }))
       .filter((s) => s.logs.length > 0);
-    saveLocalSessions(updated);
+    saveLocalSessions(updated, userId);
     setSessions(updated);
 
     // 2. Try to sync to server
@@ -556,7 +632,7 @@ export function useWorkouts() {
     } catch (err) {
       console.warn("[useWorkouts] Could not sync deleteWorkout to server (offline):", err);
     }
-  }, []);
+  }, [userId]);
 
   // ──────────────────────────────────────────
   // Read helpers (derived from in-memory state)
@@ -633,10 +709,10 @@ export function useWorkouts() {
         };
         updated = [newSession, ...prev];
       }
-      saveLocalSessions(updated);
+      saveLocalSessions(updated, userId);
       return updated;
     });
-  }, []);
+  }, [userId]);
 
   // ──────────────────────────────────────────
   // Routine Operations (Dual-Layer Sync)
@@ -649,9 +725,9 @@ export function useWorkouts() {
         exerciseIds: routineExercises,
       };
 
-      const current = loadLocalRoutines();
+      const current = loadLocalRoutines(userId);
       const updated = [newRoutine, ...current.filter((r) => r.id !== newRoutine.id)];
-      saveLocalRoutines(updated);
+      saveLocalRoutines(updated, userId);
       setSavedRoutines(updated);
 
       if (isSignedIn) {
@@ -670,18 +746,18 @@ export function useWorkouts() {
 
       return newRoutine;
     },
-    [isSignedIn]
+    [isSignedIn, userId]
   );
 
   const updateRoutine = useCallback(
     async (routineId: string, routineName: string, routineExercises: string[]) => {
-      const current = loadLocalRoutines();
+      const current = loadLocalRoutines(userId);
       const updated = current.map((r) =>
         r.id === routineId
           ? { ...r, name: routineName, exerciseIds: routineExercises }
           : r
       );
-      saveLocalRoutines(updated);
+      saveLocalRoutines(updated, userId);
       setSavedRoutines(updated);
 
       if (isSignedIn) {
@@ -697,14 +773,14 @@ export function useWorkouts() {
         });
       }
     },
-    [isSignedIn]
+    [isSignedIn, userId]
   );
 
   const deleteRoutine = useCallback(
     async (routineId: string) => {
-      const current = loadLocalRoutines();
+      const current = loadLocalRoutines(userId);
       const updated = current.filter((r) => r.id !== routineId);
-      saveLocalRoutines(updated);
+      saveLocalRoutines(updated, userId);
       setSavedRoutines(updated);
 
       if (isSignedIn) {
@@ -715,7 +791,7 @@ export function useWorkouts() {
         });
       }
     },
-    [isSignedIn]
+    [isSignedIn, userId]
   );
 
   return {
@@ -763,7 +839,7 @@ export function useWorkouts() {
           ...s,
           logs: s.logs.map((l) => (l.id === id ? { ...l, ...updated } : l)),
         }));
-        saveLocalSessions(newSessions);
+        saveLocalSessions(newSessions, userId);
         return newSessions;
       });
     },

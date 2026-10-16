@@ -107,13 +107,29 @@ export async function PATCH(
         weight: Number(s.weight),
       }));
 
-      // Replace sets only after we have a valid payload to insert
+      // Backup existing sets to restore if new insert fails
+      const { data: backupSets } = await supabase
+        .from("workout_sets")
+        .select("set_number, reps, weight")
+        .eq("log_id", log.id);
+
       await supabase.from("workout_sets").delete().eq("log_id", log.id);
 
       if (setsToInsert.length > 0) {
         const { error: setsErr } = await supabase.from("workout_sets").insert(setsToInsert);
         if (setsErr) {
           console.error("[PATCH /api/sessions/:id] sets insert:", setsErr);
+          // Rollback: restore previous sets to prevent data loss
+          if (backupSets && backupSets.length > 0) {
+            await supabase.from("workout_sets").insert(
+              backupSets.map((b) => ({
+                log_id: log.id,
+                set_number: b.set_number,
+                reps: b.reps,
+                weight: b.weight,
+              }))
+            );
+          }
         }
       }
     }

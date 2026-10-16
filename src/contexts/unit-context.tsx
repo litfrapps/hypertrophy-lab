@@ -9,39 +9,18 @@ import {
   ReactNode,
 } from "react";
 
-export type WeightUnit = "kg" | "lbs";
+import {
+  type WeightUnit,
+  KG_TO_LBS,
+  LBS_TO_KG,
+  convertWeight,
+  formatWeight,
+} from "@/lib/calculations";
+
+export type { WeightUnit };
+export { KG_TO_LBS, LBS_TO_KG, convertWeight, formatWeight };
 
 export const UNIT_STORAGE_KEY = "hypertrophy-lab-unit";
-export const KG_TO_LBS = 2.20462;
-export const LBS_TO_KG = 0.453592;
-
-/**
- * Converts a weight value between kg and lbs with 1 decimal place rounding
- * (or integer if decimal is 0).
- */
-export function convertWeight(
-  weight: number,
-  fromUnit: WeightUnit = "kg",
-  toUnit: WeightUnit = "kg"
-): number {
-  if (isNaN(weight) || weight <= 0) return 0;
-  if (fromUnit === toUnit) return weight;
-
-  const converted = fromUnit === "kg" ? weight * KG_TO_LBS : weight * LBS_TO_KG;
-  return Math.round(converted * 10) / 10;
-}
-
-/**
- * Formats a weight value converted to targetUnit, stripping trailing zeros (.0)
- */
-export function formatWeight(
-  weight: number,
-  fromUnit: WeightUnit = "kg",
-  toUnit: WeightUnit = "kg"
-): string {
-  const converted = convertWeight(weight, fromUnit, toUnit);
-  return Number.isInteger(converted) ? converted.toString() : converted.toFixed(1);
-}
 
 export interface UnitContextValue {
   globalUnit: WeightUnit;
