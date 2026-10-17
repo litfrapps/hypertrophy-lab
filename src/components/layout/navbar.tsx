@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Dumbbell,
   LineChart,
+  Info,
   Menu,
   X,
   LogIn,
@@ -56,6 +57,7 @@ const navItems = [
   { href: "/log", label: "Log Workout", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: LineChart },
+  { href: "/about", label: "About", icon: Info, badge: "Methodology" },
 ];
 
 function fmtTime(s: number) {
@@ -132,9 +134,13 @@ export function Navbar() {
                 <span className={cn(isNavActive && "font-bold text-white")}>
                   {item.label}
                 </span>
-                {isNavActive && (
+                {item.badge ? (
+                  <span className="ml-auto text-[8.5px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#2B0A0C] text-[#FF1E27] border border-[#FF1E27]/30">
+                    {item.badge}
+                  </span>
+                ) : isNavActive ? (
                   <div className="ml-auto w-1 h-1 rounded-full bg-[#FF1E27] shadow-sm shadow-[#FF1E27]" />
-                )}
+                ) : null}
               </Link>
             );
           })}
@@ -338,6 +344,11 @@ export function Navbar() {
                     >
                       <item.icon className="w-4.5 h-4.5 text-current" />
                       <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="ml-auto text-[8.5px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#2B0A0C] text-[#FF1E27] border border-[#FF1E27]/30">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

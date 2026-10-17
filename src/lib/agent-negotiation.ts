@@ -97,6 +97,7 @@ export function appendVaryAccept(headers: Headers): void {
 
 export const KNOWN_PAGES: Record<string, string> = {
   "/": "home",
+  "/about": "about",
   "/exercises": "exercises",
   "/log": "log",
   "/progress": "progress",
@@ -193,6 +194,38 @@ Track progressive overload, volume progression, and estimated 1RM across trainin
 - [Dashboard](https://hypertrophy-lab-ten.vercel.app/): Main dashboard.
 - [Workout Logger](https://hypertrophy-lab-ten.vercel.app/log): Log a new training session.
 - [Agent Instructions](https://hypertrophy-lab-ten.vercel.app/llms.txt): Full schema and instructions.
+`;
+  }
+
+  if (normalized === "/about") {
+    return `# About Hypertrophy Lab — Evidence-Based Training Methodology & Architecture
+
+Hypertrophy Lab is an evidence-based resistance training tracker designed around the scientific principles of muscle hypertrophy, mechanical tension, and systematic progressive overload.
+
+## Hypertrophy Training Methodology
+
+- **Mechanical Tension & Proximity to Failure**: Resistance training in proximity to muscular failure (1–3 Reps in Reserve / RPE 7–9.5) to recruit high-threshold motor units across lengthened-position movements.
+- **Systematic Progressive Overload**: Longitudinal tracking of volume load (sets × reps × weight) and estimated 1RM computed using the scientific Epley formula: \`weight * (1 + reps / 30)\`.
+- **Autoregulated Volume Landmarks**: Mesocycle volume progression structured between Minimum Effective Volume (MEV: 8–10 sets/week), Maximum Adaptive Volume (MAV: 12–18 sets/week), and Maximum Recoverable Volume (MRV: 18–22+ sets/week).
+- **Lengthened-Position Biomechanics**: Prioritizing movements that maximize mechanical tension at long muscle lengths for superior hypertrophic signaling.
+
+## About Us & Philosophy
+
+Unlike generic fitness trackers cluttered with cardio metrics or social noise, Hypertrophy Lab was engineered specifically for serious lifters, coaches, and athletes. Grounded in peer-reviewed exercise science (Schoenfeld, Israetel, Beardsley, Helms), it provides distraction-free logging with automatic overload mathematics.
+
+## Agent Readiness & Open Architecture
+
+Hypertrophy Lab adheres to modern agent-ready web standards:
+- **RFC 9110 Content Negotiation**: Content is delivered as clean Markdown when requested via \`Accept: text/markdown\`.
+- **Machine-Readable Metadata**: Complete agent documentation and schemas are available at [/llms.txt](https://hypertrophy-lab-ten.vercel.app/llms.txt) and [/llms-full.txt](https://hypertrophy-lab-ten.vercel.app/llms-full.txt).
+- **Agent-Friendly 404s**: Missing routes return structured recovery links to prevent bot disorientation.
+
+## Navigation & Endpoints
+
+- [Dashboard](https://hypertrophy-lab-ten.vercel.app/): Main workout overview.
+- [Workout Logger](https://hypertrophy-lab-ten.vercel.app/log): Active set and RIR logging.
+- [Exercise Library](https://hypertrophy-lab-ten.vercel.app/exercises): Biomechanics and movement directory.
+- [Progress Analytics](https://hypertrophy-lab-ten.vercel.app/progress): Mesocycle volume curves and 1RM tracking.
 `;
   }
 

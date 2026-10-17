@@ -68,6 +68,7 @@ test("appendVaryAccept - sets and merges Vary header properly", () => {
 
 test("isKnownPageRoute - detects app routes accurately", () => {
   assert.equal(isKnownPageRoute("/"), true);
+  assert.equal(isKnownPageRoute("/about"), true);
   assert.equal(isKnownPageRoute("/exercises"), true);
   assert.equal(isKnownPageRoute("/log"), true);
   assert.equal(isKnownPageRoute("/progress"), true);
@@ -83,6 +84,11 @@ test("getMarkdownForPath - serves valid, rich Markdown representation", () => {
   assert.ok(homeMd.includes("Progressive Overload"));
   assert.ok(homeMd.includes("https://hypertrophy-lab-ten.vercel.app/llms.txt"));
   assert.ok(homeMd.length > 500);
+
+  const aboutMd = getMarkdownForPath("/about");
+  assert.ok(aboutMd);
+  assert.ok(aboutMd.includes("About Hypertrophy Lab"));
+  assert.ok(aboutMd.includes("Hypertrophy Training Methodology"));
 
   const exercisesMd = getMarkdownForPath("/exercises");
   assert.ok(exercisesMd);
