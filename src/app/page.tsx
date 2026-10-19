@@ -315,7 +315,10 @@ export default function DashboardPage() {
           {/* ── 2. 2x2 STATS GRID (Compact & Crisp) ──────────────────────────── */}
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {/* Card 1: TOTAL WORKOUTS */}
-            <div className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-all duration-200 group">
+            <Link
+              href="/log"
+              className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"
+            >
               <div>
                 <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:scale-105 transition-transform">
                   <Dumbbell className="w-4 h-4" />
@@ -328,18 +331,20 @@ export default function DashboardPage() {
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
                   {isLoaded ? totalWorkouts : "—"}
                 </span>
-                <Link
-                  href="/progress"
-                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] hover:bg-[#FF1E27] hover:text-white transition-all cursor-pointer"
-                  aria-label="View workout progress"
+                <div
+                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] group-hover:bg-[#FF1E27] group-hover:text-white transition-all pointer-events-none"
+                  aria-hidden="true"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Card 2: THIS WEEK */}
-            <div className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-all duration-200 group">
+            <Link
+              href="/log"
+              className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"
+            >
               <div>
                 <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:scale-105 transition-transform">
                   <Calendar className="w-4 h-4" />
@@ -352,18 +357,20 @@ export default function DashboardPage() {
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
                   {isLoaded ? thisWeekWorkouts.length : "—"}
                 </span>
-                <Link
-                  href="/log"
-                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] hover:bg-[#FF1E27] hover:text-white transition-all cursor-pointer"
-                  aria-label="View workouts this week"
+                <div
+                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] group-hover:bg-[#FF1E27] group-hover:text-white transition-all pointer-events-none"
+                  aria-hidden="true"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Card 3: EXERCISES USED */}
-            <div className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-all duration-200 group">
+            <Link
+              href="/exercises"
+              className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"
+            >
               <div>
                 <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:scale-105 transition-transform">
                   <Target className="w-4 h-4" />
@@ -376,18 +383,20 @@ export default function DashboardPage() {
                 <span className="text-2xl sm:text-3xl font-extrabold text-white leading-none font-sans">
                   {isLoaded ? totalExercises : "—"}
                 </span>
-                <Link
-                  href="/exercises"
-                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] hover:bg-[#FF1E27] hover:text-white transition-all cursor-pointer"
-                  aria-label="View exercises library"
+                <div
+                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] group-hover:bg-[#FF1E27] group-hover:text-white transition-all pointer-events-none"
+                  aria-hidden="true"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
 
             {/* Card 4: TOTAL VOLUME */}
-            <div className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-all duration-200 group">
+            <Link
+              href="/progress"
+              className="rounded-xl bg-[#121215] border border-[#222226] p-3 sm:p-3.5 flex flex-col justify-between hover:border-primary/40 active:scale-[0.98] transition-all duration-150 cursor-pointer group"
+            >
               <div>
                 <div className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] mb-2 group-hover:scale-105 transition-transform">
                   <Activity className="w-4 h-4" />
@@ -409,15 +418,14 @@ export default function DashboardPage() {
                     {globalUnit}
                   </span>
                 </div>
-                <Link
-                  href="/progress"
-                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] hover:bg-[#FF1E27] hover:text-white transition-all cursor-pointer"
-                  aria-label="View total volume progression"
+                <div
+                  className="w-6 h-6 rounded-full border border-[#FF1E27]/40 flex items-center justify-center text-[#FF1E27] group-hover:bg-[#FF1E27] group-hover:text-white transition-all pointer-events-none"
+                  aria-hidden="true"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                </div>
               </div>
-            </div>
+            </Link>
           </div>
 
           {/* ── 3. QUICK ACTIONS SECTION (Compact) ───────────────────────────── */}
