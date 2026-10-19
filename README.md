@@ -1,46 +1,41 @@
-# Hypertrophy Lab 🧬🏋️
+# Muscle Lab 🏋️
 
-A focused hypertrophy workout tracking web application built with **Next.js 14/16 (App Router)**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui**.
+A clean, powerful, and easy-to-use weight training logger and strength tracking web application built with **Next.js 14/16 (App Router)**, **TypeScript**, **Tailwind CSS**, and **shadcn/ui**.
 
-Designed specifically for serious lifters seeking optimal muscle hypertrophy through meticulous workout logging, customizable rest periods, and data-driven progressive overload tracking.
+Designed for lifters of all experience levels seeking frictionless workout logging, customizable rest periods, and clear, data-driven progressive overload tracking without distractions.
 
 ---
 
 ## 🌟 Core Features
 
-### 1. 📚 Comprehensive Exercise Library (`/exercises`)
-- **50+ exercises** with primary and secondary muscle group classifications (e.g. *Flat Barbell Bench Press* -> Main: Chest, Secondary: Triceps).
-- Interactive search by exercise name, equipment, or target muscle group.
-- Color-coded badges for all 12 major muscle groups (Chest, Back, Shoulders, Quads, Hamstrings, Glutes, Biceps, Triceps, Calves, Core, Traps, Forearms).
-- Direct "Log Exercise" integration.
-
-### 2. 📝 Core Workout Logger with Auto Rest Timer (`/log`)
-- Multi-set logger recording reps, working weights, and auto-calculating total session volume.
+### 1. 📝 Frictionless Workout Logging (`/log`)
+- **Multi-Set Weight & Rep Tracking**: Fast, responsive inputs for sets, reps, and weights with instant validation safeguards against invalid entries.
 - **Set Completion Trigger**: Check off a completed set to **automatically start your rest countdown timer**.
-- **Global Unit Toggling**: Seamlessly switch between **kg** and **lbs** globally with real-time conversion.
-- Session manager supporting routine loading, live elapsed duration timer, and local + Supabase persistence.
+- **Global Unit Toggling**: Seamlessly switch between **kg** and **lbs** globally with real-time conversion across all views.
+- **Routine & History Management**: Load saved workout routines, review past sessions on an interactive calendar, and edit logged session details.
+- **Offline-First Data Reliability**: Automatic local storage fallback with fast, seamless cloud syncing to Supabase.
 
-### 3. ⏱️ Customizable Rest Period Optimizer (`/timer`)
-- Circular SVG progress ring with millisecond-accurate countdown.
-- Synthesized Web Audio API alert chime — no external audio files required.
-- **Science-Backed Presets**:
-  - `60s`: Isolation / Calves
-  - `90s`: Standard Hypertrophy
-  - `120s`: Optimal metabolic recovery
-  - `180s`: Compound lifts (2-3 min for maximal mechanical tension)
-- Custom minute/second duration input and preset controls.
+### 2. ⏱️ Rest Timer & Audio Alerts (`/timer`)
+- Circular SVG countdown ring with millisecond accuracy.
+- Synthesized Web Audio API alert chimes — zero external audio dependencies.
+- Quick presets for compound and isolation training (60s, 90s, 120s, 180s) or custom minute/second durations.
 
-### 4. 📈 Progressive Overload Graphical Tracking (`/progress`)
-- Dynamic **Recharts** line and area visualization displaying load progression over time (e.g. Squat 80kg → 90kg → 100kg).
-- Exercise switcher to inspect volume and top set progression for any movement.
-- Personal Record (PR) badges, peak weight indicators, net increase (kg and %), and historical session records.
+### 3. 📈 Strength Analytics & Progressive Overload (`/progress`)
+- Dynamic **Recharts** line charts visualizing weight progression and volume trajectories over time.
+- Automated **Estimated 1-Rep Max (E1RM)** calculations using the validated Epley formula `[weight × (1 + reps / 30)]`.
+- Personal Record (PR) badges, peak weight indicators, net progress (kg/lbs and %), and complete exercise history logs.
+
+### 4. 📚 Comprehensive Exercise Library (`/exercises`)
+- **50+ exercises** organized across all major muscle groups (Chest, Back, Shoulders, Quads, Hamstrings, Glutes, Biceps, Triceps, Calves, Core, Traps, Forearms).
+- Instant search and filtering by exercise name, equipment type, or target muscle group.
+- One-tap "Log Exercise" direct integration into active workout sessions.
 
 ---
 
 ## 🎨 Design System
-- **Theme**: Premium Dark Charcoal & Electric Crimson (`#08080a`, `#121215`, `#16161a`, `#FF1E27`).
-- **Typography**: Inter (Google Fonts) & high-density monospace figures.
-- **Layout**: Mobile-first responsive design with desktop sidebar, mobile header, and 4-tab mobile bottom navigation bar.
+- **Theme**: Premium Pitch Black & Electric Crimson (`#08080A`, `#121215`, `#16161a`, `#FF1E27`).
+- **Typography**: Clean, readable sans-serif typography with high-density monospace numerical readouts.
+- **Layout**: Mobile-first responsive layout with desktop sidebar, mobile header, and 4-tab mobile bottom navigation bar.
 
 ---
 
@@ -89,13 +84,14 @@ hypertrophy-lab/
 │   ├── app/
 │   │   ├── layout.tsx         # Dark theme layout & desktop/mobile nav
 │   │   ├── page.tsx           # Dashboard with stats, quick actions & sessions
+│   │   ├── about/page.tsx     # Tracker capabilities, philosophy & architecture
 │   │   ├── exercises/page.tsx # 50+ exercises library & muscle filters
 │   │   ├── log/page.tsx       # Workout logger & auto rest countdown
 │   │   ├── timer/page.tsx     # Rest timer with audio alerts & presets
 │   │   ├── progress/page.tsx  # Recharts progressive overload charts
 │   │   └── globals.css        # Dark mode theme & animations
 │   ├── components/
-│   │   ├── layout/navbar.tsx  # Responsive 4-tab navigation & sidebar
+│   │   ├── layout/navbar.tsx  # Responsive navigation & sidebar
 │   │   ├── timer/rest-timer.tsx # Interactive rest timer widget
 │   │   └── ui/                # shadcn UI components
 │   ├── hooks/

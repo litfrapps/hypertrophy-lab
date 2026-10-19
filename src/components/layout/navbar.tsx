@@ -51,13 +51,20 @@ const mobileBottomTabs = [
   { href: "/progress", label: "Progress", icon: LineChart },
 ];
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badge?: string;
+}
+
 // Desktop / Full Drawer Navigation Items
-const navItems = [
+const navItems: NavItem[] = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/log", label: "Log Workout", icon: ClipboardList },
   { href: "/exercises", label: "Exercises", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: LineChart },
-  { href: "/about", label: "About", icon: Info, badge: "Methodology" },
+  { href: "/about", label: "About", icon: Info },
 ];
 
 function fmtTime(s: number) {

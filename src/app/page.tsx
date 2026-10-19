@@ -91,7 +91,7 @@ export default function DashboardPage() {
         (s, set) =>
           s +
           set.reps *
-            convertWeight(set.weight, set.unit || w.unit || "kg", globalUnit),
+          convertWeight(set.weight, set.unit || w.unit || "kg", globalUnit),
         0
       ),
     0
@@ -135,7 +135,7 @@ export default function DashboardPage() {
         (sum, s) =>
           sum +
           s.reps *
-            convertWeight(s.weight, s.unit || w.unit || "kg", globalUnit),
+          convertWeight(s.weight, s.unit || w.unit || "kg", globalUnit),
         0
       );
 
@@ -561,16 +561,16 @@ export default function DashboardPage() {
                   const isValidDate = !isNaN(sessionDate.getTime());
                   const dateString = isValidDate
                     ? sessionDate.toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      })
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })
                     : session.date;
                   const timeString = isValidDate
                     ? sessionDate.toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
                     : null;
 
                   const exerciseCount = session.logs?.length || 0;
@@ -587,11 +587,11 @@ export default function DashboardPage() {
                           (sSum, s) =>
                             sSum +
                             (s.reps || 0) *
-                              convertWeight(
-                                s.weight || 0,
-                                s.unit || l.unit || "kg",
-                                globalUnit
-                              ),
+                            convertWeight(
+                              s.weight || 0,
+                              s.unit || l.unit || "kg",
+                              globalUnit
+                            ),
                           0
                         ) || 0),
                       0
@@ -774,11 +774,10 @@ export default function DashboardPage() {
                 </h2>
               </div>
               <span
-                className={`font-display text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                  !progressStats.hasData
+                className={`font-display text-[8.5px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${!progressStats.hasData
                     ? "text-[#888890] bg-[#1a1a1f] border border-[#222226]"
                     : "text-[#FF1E27] bg-[#2B0A0C] border border-[#FF1E27]/30"
-                }`}
+                  }`}
               >
                 {progressStats.overloadBadgeText}
               </span>

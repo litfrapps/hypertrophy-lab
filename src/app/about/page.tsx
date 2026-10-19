@@ -5,20 +5,20 @@ import {
   Dumbbell,
   LineChart,
   Bot,
-  Brain,
   ShieldCheck,
   Zap,
   ArrowRight,
-  Target,
-  BarChart3,
-  Layers,
   BookOpen,
+  ClipboardCheck,
+  Timer,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "About & Methodology — Hypertrophy Lab",
+  title: "About — Muscle Lab",
   description:
-    "Explore the evidence-based exercise science, progressive overload formulas, and agentic machine-readable architecture powering Hypertrophy Lab.",
+    "Muscle Lab is a clean, powerful, and easy-to-use weight training logger and workout tracker engineered for lifters of all experience levels.",
 };
 
 export default function AboutPage() {
@@ -31,15 +31,15 @@ export default function AboutPage() {
         <div className="relative z-10 max-w-2xl space-y-2">
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#2B0A0C] border border-[#FF1E27]/30 text-[#FF1E27] text-[10px] font-mono font-bold tracking-widest uppercase">
             <Sparkles className="w-3 h-3" />
-            EVIDENCE-BASED HYPERTROPHY ARCHITECTURE
+            CLEAN &amp; POWERFUL WEIGHT TRAINING LOGGER
           </div>
 
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-[1.15] font-display">
-            Science, Not Guesswork.
+            Simple, Powerful Weight Training.
           </h1>
 
           <p className="text-xs sm:text-sm text-[#888890] leading-relaxed">
-            Hypertrophy Lab was built to solve a simple problem: mainstream fitness trackers are crowded with social feeds, cardio gimmicks, and unscientific algorithms. We stripped away the noise to engineer a dedicated tracker grounded strictly in muscle physiology, mechanical tension, and systematic progressive overload.
+            Muscle Lab was built to solve a simple problem: mainstream workout trackers are crowded with social feeds, confusing menus, and distracting clutter. We stripped away the noise to engineer a clean, focused, and reliable weight training logger designed for lifters of all experience levels—from your first barbell session to advanced strength milestones.
           </p>
 
           <div className="flex items-center gap-1.5 pt-2">
@@ -49,72 +49,103 @@ export default function AboutPage() {
         </div>
       </div>
 
-      {/* ── 2. HYPERTROPHY METHODOLOGY PILLARS ────────────────────────────── */}
+      {/* ── 2. CORE TRACKER CAPABILITIES ──────────────────────────────────── */}
       <section className="space-y-3.5">
-        <div className="flex items-center justify-between pb-2 border-b border-[#222226]">
-          <div className="flex items-center gap-2">
-            <Brain className="w-4 h-4 text-[#FF1E27]" />
-            <h2 className="font-display text-sm font-bold tracking-wider text-white uppercase">
-              The 3 Scientific Pillars of Hypertrophy
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono text-[#888890] uppercase tracking-wider">
-            PHYSIOLOGY &amp; BIOMECHANICS
-          </span>
+        <div className="flex items-center gap-2 pb-2 border-b border-[#222226]">
+          <Dumbbell className="w-4 h-4 text-[#FF1E27]" />
+          <h2 className="font-display text-sm font-bold tracking-wider text-white uppercase">
+            Core Tracker Capabilities
+          </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {/* Pillar 1 */}
-          <div className="rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Capability 1: Frictionless Logging */}
+          <div className="sm:col-span-2 lg:col-span-2 rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
             <div className="space-y-2.5">
               <div className="w-9 h-9 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] group-hover:scale-105 transition-transform">
-                <Target className="w-4.5 h-4.5" />
+                <ClipboardCheck className="w-4.5 h-4.5" />
               </div>
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
-                1. Mechanical Tension &amp; RIR
+                1. Frictionless Logging
               </h3>
               <p className="text-xs text-[#888890] leading-relaxed">
-                Mechanical tension is the primary stimulus for muscle protein synthesis. Training within <span className="text-white font-medium">1–3 Reps in Reserve (RIR / RPE 7–9.5)</span> ensures recruitment of high-threshold motor units, particularly when loading muscles at stretched or lengthened lengths.
+                Log multi-set workouts with speed and precision. Rapidly enter weights and reps with instant validation safeguards that prevent accidental typos or invalid records. Check off sets to trigger auto-volume tracking and keep your training rhythm uninterrupted.
               </p>
             </div>
             <div className="mt-3.5 pt-2.5 border-t border-[#1c1c22] text-[10px] font-mono text-[#FF1E27] flex items-center gap-1">
-              <span>Proximity to Failure: 1–3 RIR</span>
+              <span>Multi-Set &amp; Rep Tracking · Validation Safeguards</span>
             </div>
           </div>
 
-          {/* Pillar 2 */}
-          <div className="rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
+          {/* Capability 2: Rest Timer & Unit Conversions */}
+          <div className="sm:col-span-1 lg:col-span-1 rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
             <div className="space-y-2.5">
               <div className="w-9 h-9 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] group-hover:scale-105 transition-transform">
-                <BarChart3 className="w-4.5 h-4.5" />
+                <Timer className="w-4.5 h-4.5" />
               </div>
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
-                2. Systematic Progressive Overload
+                2. Rest Timer &amp; Unit Conversions
               </h3>
               <p className="text-xs text-[#888890] leading-relaxed">
-                Muscles adapt to demands imposed upon them. We track longitudinal session tonnage and calculate estimated 1RM using the validated <span className="text-white font-medium">Epley equation: [weight × (1 + reps / 30)]</span> to confirm genuine strength and workload progressions across mesocycles.
+                Stay on pace between sets with built-in countdown rest alerts and synthesized audio chimes. Switch between kilograms (kg) and pounds (lbs) globally across all views with seamless real-time conversions.
               </p>
             </div>
             <div className="mt-3.5 pt-2.5 border-t border-[#1c1c22] text-[10px] font-mono text-[#FF1E27] flex items-center gap-1">
-              <span>Scientific Formula: Epley e1RM</span>
+              <span>Countdown Rest Alerts · Instant kg/lbs Toggle</span>
             </div>
           </div>
 
-          {/* Pillar 3 */}
-          <div className="rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
+          {/* Capability 3: Strength Analytics */}
+          <div className="sm:col-span-1 lg:col-span-1 rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
             <div className="space-y-2.5">
               <div className="w-9 h-9 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] group-hover:scale-105 transition-transform">
-                <Layers className="w-4.5 h-4.5" />
+                <TrendingUp className="w-4.5 h-4.5" />
               </div>
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
-                3. Autoregulated Volume Landmarks
+                3. Strength Analytics &amp; E1RM
               </h3>
               <p className="text-xs text-[#888890] leading-relaxed">
-                Hypertrophy stimulus scales with hard working sets up to recovery limits. We structure mesocycles between <span className="text-white font-medium">Minimum Effective Volume (MEV, 8–10 sets/week)</span> and <span className="text-white font-medium">Maximum Recoverable Volume (MRV, 18–22 sets/week)</span> to avert systemic burnout.
+                Visualize progressive overload with dynamic line charts. Track strength milestones and evaluate capacity with automated Estimated 1-Rep Max (E1RM) formulas calculated via the validated Epley equation.
               </p>
             </div>
             <div className="mt-3.5 pt-2.5 border-t border-[#1c1c22] text-[10px] font-mono text-[#FF1E27] flex items-center gap-1">
-              <span>Volume Target: MEV → MRV</span>
+              <span>Progressive Overload Charts · Epley E1RM</span>
+            </div>
+          </div>
+
+          {/* Capability 4: Routine & History Management */}
+          <div className="sm:col-span-1 lg:col-span-1 rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
+            <div className="space-y-2.5">
+              <div className="w-9 h-9 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] group-hover:scale-105 transition-transform">
+                <Calendar className="w-4.5 h-4.5" />
+              </div>
+              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                4. Routine &amp; History Management
+              </h3>
+              <p className="text-xs text-[#888890] leading-relaxed">
+                Organize your training with an interactive workout calendar, saved routines for repeatable splits, and fully editable session history to adjust weights, reps, or notes at any time.
+              </p>
+            </div>
+            <div className="mt-3.5 pt-2.5 border-t border-[#1c1c22] text-[10px] font-mono text-[#FF1E27] flex items-center gap-1">
+              <span>Interactive Calendar · Saved Routines · Editable Logs</span>
+            </div>
+          </div>
+
+          {/* Capability 5: Offline-First Data Reliability */}
+          <div className="sm:col-span-2 lg:col-span-1 rounded-xl bg-[#121215] border border-[#222226] p-4 flex flex-col justify-between hover:border-[#FF1E27]/40 transition-colors group">
+            <div className="space-y-2.5">
+              <div className="w-9 h-9 rounded-lg bg-[#2B0A0C] border border-[#FF1E27]/25 flex items-center justify-center text-[#FF1E27] group-hover:scale-105 transition-transform">
+                <ShieldCheck className="w-4.5 h-4.5" />
+              </div>
+              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider">
+                5. Offline-First Reliability
+              </h3>
+              <p className="text-xs text-[#888890] leading-relaxed">
+                Work out anywhere without worrying about patchy gym Wi-Fi. Every set is immediately persisted to local storage, followed by fast, automated background synchronization with Supabase cloud storage.
+              </p>
+            </div>
+            <div className="mt-3.5 pt-2.5 border-t border-[#1c1c22] text-[10px] font-mono text-[#FF1E27] flex items-center gap-1">
+              <span>Local Storage Fallback · Fast Supabase Sync</span>
             </div>
           </div>
         </div>
@@ -122,29 +153,24 @@ export default function AboutPage() {
 
       {/* ── 3. ABOUT US & DESIGN PHILOSOPHY ────────────────────────────────── */}
       <section className="rounded-xl bg-[#121215] border border-[#222226] p-5 space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-[#222226]">
-          <div className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-[#FF1E27]" />
-            <h2 className="font-display text-xs font-bold tracking-wider text-white uppercase">
-              About Us &amp; Our Philosophy
-            </h2>
-          </div>
-          <span className="text-[9.5px] font-mono text-[#888890] uppercase tracking-wider">
-            MISSION &amp; VALUES
-          </span>
+        <div className="flex items-center gap-2 pb-2 border-b border-[#222226]">
+          <BookOpen className="w-4 h-4 text-[#FF1E27]" />
+          <h2 className="font-display text-xs font-bold tracking-wider text-white uppercase">
+            About Muscle Lab &amp; Our Philosophy
+          </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-[#888890] leading-relaxed">
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-xs">Built for Serious Resistance Lifters</h3>
+            <h3 className="text-white font-semibold text-xs">Built for Every Lifter</h3>
             <p>
-              Whether you are an aspiring bodybuilder, a strength athlete transitioning into a hypertrophy block, or an evidence-based coach, you need accurate data without cognitive friction. Hypertrophy Lab eliminates tedious inputs, offering lightning-fast set logging, built-in rest timers, and instant volume mathematics.
+              Whether you are stepping into the gym for the first time, chasing a new barbell PR, or running a structured weekly split, Muscle Lab provides clean, distraction-free strength tracking. We eliminate tedious friction so you can focus on lifting, logging, and recovering.
             </p>
           </div>
           <div className="space-y-2">
-            <h3 className="text-white font-semibold text-xs">Grounded in Peer-Reviewed Science</h3>
+            <h3 className="text-white font-semibold text-xs">Clear, Honest Progression</h3>
             <p>
-              Our exercise catalog and progression algorithms draw directly from modern hypertrophy literature published by researchers such as Dr. Brad Schoenfeld, Dr. Mike Israetel, Chris Beardsley, and Dr. Eric Helms. Every feature is weighed against its physiological utility.
+              Real strength progression should be straightforward. By giving you intuitive set and rep logging, reliable volume calculations, and honest strength metrics, Muscle Lab helps you measure tangible improvements workout after workout.
             </p>
           </div>
         </div>
@@ -152,20 +178,15 @@ export default function AboutPage() {
 
       {/* ── 4. AGENT READINESS & MACHINE-READABILITY (Is-Agentic Specs) ────── */}
       <section className="rounded-xl bg-[#121215] border border-[#222226] p-5 space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-[#222226]">
-          <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-[#FF1E27]" />
-            <h2 className="font-display text-xs font-bold tracking-wider text-white uppercase">
-              Agent-Ready Web Architecture
-            </h2>
-          </div>
-          <span className="text-[9.5px] font-mono text-[#FF1E27] tracking-wider uppercase font-semibold">
-            RFC 9110 &amp; LLMS.TXT COMPLIANT
-          </span>
+        <div className="flex items-center gap-2 pb-2 border-b border-[#222226]">
+          <Bot className="w-4 h-4 text-[#FF1E27]" />
+          <h2 className="font-display text-xs font-bold tracking-wider text-white uppercase">
+            Agent-Ready Web Architecture
+          </h2>
         </div>
 
         <p className="text-xs text-[#888890] leading-relaxed">
-          Hypertrophy Lab is designed for both human athletes and autonomous AI agents. We implement the latest agentic web specifications to provide pristine machine readability without sacrificing high-performance UI responsiveness:
+          Muscle Lab is engineered for both everyday athletes and autonomous AI agents. We implement the latest agentic web specifications to provide pristine machine readability without sacrificing high-performance UI responsiveness:
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
@@ -215,7 +236,7 @@ export default function AboutPage() {
               <p className="text-xs font-bold text-white font-display uppercase tracking-wider">
                 Workout Logger
               </p>
-              <p className="text-[10px] text-[#888890]">Start logging sets &amp; RIR</p>
+              <p className="text-[10px] text-[#888890]">Start logging sets &amp; reps</p>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-0.5 transition-all" />
@@ -233,7 +254,7 @@ export default function AboutPage() {
               <p className="text-xs font-bold text-white font-display uppercase tracking-wider">
                 Exercise Library
               </p>
-              <p className="text-[10px] text-[#888890]">Browse biomechanics &amp; tension</p>
+              <p className="text-[10px] text-[#888890]">Browse movements &amp; muscles</p>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-0.5 transition-all" />
@@ -249,9 +270,9 @@ export default function AboutPage() {
             </div>
             <div>
               <p className="text-xs font-bold text-white font-display uppercase tracking-wider">
-                Progress Analytics
+                Strength Analytics
               </p>
-              <p className="text-[10px] text-[#888890]">View volume &amp; 1RM curves</p>
+              <p className="text-[10px] text-[#888890]">View strength curves &amp; 1RM</p>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-[#888890] group-hover:text-[#FF1E27] group-hover:translate-x-0.5 transition-all" />

@@ -24,18 +24,19 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://hypertrophy-lab-ten.vercel.app"),
-  title: "Hypertrophy Lab — Science-Backed Workout Tracker & Progressive Overload Planner",
+  title: "Muscle Lab — Clean, Powerful & Easy-to-Use Weight Training Logger",
   description:
-    "Hypertrophy Lab is an evidence-based workout tracker and progressive overload planner. Track hypertrophy training, log sets and reps, visualize volume trajectory, and optimize muscle growth with scientific precision.",
+    "Muscle Lab is a clean, powerful, and easy-to-use weight training logger and workout tracker. Effortlessly log sets and reps, track progressive overload, monitor strength analytics, and manage routines for lifters of all experience levels.",
   keywords: [
-    "hypertrophy lab",
-    "hypertrophy workout tracker",
-    "progressive overload planner",
-    "muscle growth tracker",
-    "evidence-based workout tracker",
+    "muscle lab",
+    "weight training logger",
+    "workout tracker",
     "strength training log",
-    "scientific resistance training",
-    "mesocycle planner",
+    "progressive overload planner",
+    "gym workout log",
+    "rep and set tracker",
+    "lifting log",
+    "exercise tracker",
   ],
   manifest: "/manifest.json",
   alternates: {
@@ -45,23 +46,23 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Hypertrophy Lab — Science-Backed Workout Tracker & Progressive Overload Planner",
+    title: "Muscle Lab — Clean, Powerful & Easy-to-Use Weight Training Logger",
     description:
-      "Hypertrophy Lab is an evidence-based workout tracker and progressive overload planner. Track hypertrophy training, log sets and reps, visualize volume trajectory, and optimize muscle growth.",
+      "Muscle Lab is a clean, powerful, and easy-to-use weight training logger and workout tracker. Effortlessly log sets and reps, track progressive overload, and manage routines for lifters of all experience levels.",
     url: "https://hypertrophy-lab-ten.vercel.app",
-    siteName: "Hypertrophy Lab",
+    siteName: "Muscle Lab",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hypertrophy Lab — Science-Backed Workout Tracker",
+    title: "Muscle Lab — Clean, Powerful & Easy-to-Use Weight Training Logger",
     description:
-      "Evidence-based workout tracker and progressive overload planner for muscle hypertrophy.",
+      "Clean, powerful, and easy-to-use weight training logger and progressive overload tracker for lifters of all experience levels.",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Hypertrophy Lab",
+    title: "Muscle Lab",
   },
   icons: {
     icon: [

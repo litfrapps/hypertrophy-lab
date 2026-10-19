@@ -11,7 +11,6 @@ import {
   Filter,
   X,
   ChevronDown,
-  ChevronUp,
   ChevronsUpDown,
   Minimize2,
   ChevronRight,
