@@ -240,24 +240,9 @@ function ExercisesContent() {
 
       {/* Results Count & Quick Toggle Bar */}
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/5">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            Showing <span className="font-semibold text-white">{filteredExercises.length}</span> of{" "}
-            <span className="font-semibold text-white">{exercises.length}</span>
-          </span>
-          {selectedMuscle && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] bg-red-950/40 border border-primary/30 text-primary font-medium">
-              <span>{selectedMuscle}</span>
-              <button
-                type="button"
-                onClick={() => handleMuscleSelect(null)}
-                className="hover:text-white transition-colors cursor-pointer"
-                aria-label="Clear muscle filter"
-              >
-                <X className="w-2.5 h-2.5" />
-              </button>
-            </span>
-          )}
+        <div className="text-xs text-muted-foreground">
+          Showing <span className="font-semibold text-white">{filteredExercises.length}</span> of{" "}
+          <span className="font-semibold text-white">{exercises.length}</span>
         </div>
 
         {/* Global Expand All / Collapse All Controls */}
