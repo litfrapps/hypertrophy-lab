@@ -132,7 +132,7 @@ function ProgressContent() {
           e.name.toLowerCase() === normalized ||
           e.id.toLowerCase() === normalized ||
           e.name.toLowerCase().replace(/[^a-z0-9]/g, "") ===
-            normalized.replace(/[^a-z0-9]/g, "") ||
+          normalized.replace(/[^a-z0-9]/g, "") ||
           e.name.toLowerCase().includes(normalized) ||
           normalized.includes(e.name.toLowerCase())
       );
@@ -246,7 +246,7 @@ function ProgressContent() {
     }));
     return converted.reduce((best, s) =>
       s.convertedWeight > best.convertedWeight ? s : best
-    , converted[0]);
+      , converted[0]);
   }, [latestLog, convertWeight, globalUnit]);
 
   const latestWeight = latestWorkingSet ? latestWorkingSet.convertedWeight : 0;
@@ -266,7 +266,7 @@ function ProgressContent() {
     }));
     return converted.reduce((best, s) =>
       s.convertedWeight > best.convertedWeight ? s : best
-    , converted[0]);
+      , converted[0]);
   }, [firstLog, convertWeight, globalUnit]);
 
   const firstWeight = firstWorkingSet ? firstWorkingSet.convertedWeight : 0;
@@ -307,18 +307,11 @@ function ProgressContent() {
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* Header — Log Session button intentionally removed */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2 mb-1">
-          <TrendingUp className="w-5 h-5 text-blue-400" />
-          <span className="text-xs uppercase tracking-widest text-blue-400 font-semibold">
-            Hypertrophy Overload Tracker
-          </span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-          Progressive Overload Graphs
+        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-display">
+          Overload Graphs
         </h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          Monitor mechanical load progression over time — the primary driver of
-          muscle hypertrophy.
+          Monitor mechanical load progression over time
         </p>
       </div>
 
@@ -387,8 +380,8 @@ function ProgressContent() {
                           {/* Exercise name (no muscle group parenthetical) */}
                           <span
                             className={`flex-1 truncate ${isZero
-                                ? "text-muted-foreground/50"
-                                : "text-foreground"
+                              ? "text-muted-foreground/50"
+                              : "text-foreground"
                               }`}
                           >
                             {ex.name}

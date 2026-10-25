@@ -44,8 +44,8 @@ export function RoutineSelector({
       {/* Section Header with Title & Routine Creation Trigger */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
-          <Layers className="w-3.5 h-3.5 text-primary" aria-hidden="true" />
-          <h2 className="text-xs sm:text-sm font-bold text-foreground">
+          <Layers className="w-4 h-4 text-primary" aria-hidden="true" />
+          <h2 className="text-sm sm:text-base font-bold text-foreground">
             My Routines
           </h2>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-950/40 border border-red-900/30 text-primary font-mono font-bold">
@@ -58,12 +58,12 @@ export function RoutineSelector({
           type="button"
           id="new-routine-btn"
           onClick={onNewRoutine}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-950/40
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-950/40
                      hover:bg-primary/20 border border-primary/30 text-red-200 hover:text-white
-                     text-[11px] font-semibold transition-all cursor-pointer"
+                     text-xs font-semibold transition-all cursor-pointer"
           aria-label="Create new routine"
         >
-          <Plus className="w-3 h-3 text-primary" />
+          <Plus className="w-3.5 h-3.5 text-primary" />
           New Routine
         </button>
       </div>
@@ -109,14 +109,11 @@ export function RoutineSelector({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <Layers className="w-3 h-3 text-primary shrink-0" aria-hidden="true" />
-                      <span className="text-xs font-bold text-foreground truncate">
+                      <Layers className="w-3.5 h-3.5 text-primary shrink-0" aria-hidden="true" />
+                      <span className="text-sm font-bold text-foreground truncate">
                         {routine.name}
                       </span>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {exNames.length} {exNames.length === 1 ? "exercise" : "exercises"}
-                    </p>
                   </div>
 
                   {/* Edit / Delete triggers */}

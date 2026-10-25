@@ -604,134 +604,134 @@ function WorkoutSessionManager() {
                     transition={{ layout: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } }}
                     className="rounded-xl border border-border/70 bg-card shadow-sm overflow-hidden transition-colors"
                   >
-                  {/* Exercise card header */}
-                  <div className="px-3 py-2.5 border-b border-border/40 bg-secondary/20 flex items-center justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono text-muted-foreground font-bold">
-                          #{exIdx + 1}
-                        </span>
-                        <h2 className="font-bold text-sm text-foreground truncate">
-                          {item.exercise.name}
-                        </h2>
+                    {/* Exercise card header */}
+                    <div className="px-3 py-2.5 border-b border-border/40 bg-secondary/20 flex items-center justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-muted-foreground font-bold">
+                            #{exIdx + 1}
+                          </span>
+                          <h2 className="font-bold text-sm text-foreground truncate">
+                            {item.exercise.name}
+                          </h2>
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span
+                            className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${primaryColors.bg} ${primaryColors.text}`}
+                          >
+                            {item.exercise.primaryMuscle}
+                          </span>
+                          <span className="text-[9px] text-muted-foreground truncate">
+                            • {item.exercise.secondaryMuscle}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={`text-[9px] font-semibold px-1.5 py-0.2 rounded ${primaryColors.bg} ${primaryColors.text}`}
-                        >
-                          {item.exercise.primaryMuscle}
-                        </span>
-                        <span className="text-[9px] text-muted-foreground truncate">
-                          • {item.exercise.secondaryMuscle}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {item.timerActive && (
-                        <ExerciseInlineTimer
-                          key={`${item.id}-${item.timerKey}`}
-                          durationSeconds={item.restTimerSeconds}
-                          isActive={item.timerActive}
-                          exerciseName={item.exercise.name}
-                          onDismiss={() => dismissExerciseTimer(item.id)}
-                        />
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {item.timerActive && (
+                          <ExerciseInlineTimer
+                            key={`${item.id}-${item.timerKey}`}
+                            durationSeconds={item.restTimerSeconds}
+                            isActive={item.timerActive}
+                            exerciseName={item.exercise.name}
+                            onDismiss={() => dismissExerciseTimer(item.id)}
+                          />
+                        )}
 
-                      <button
-                        type="button"
-                        onClick={() => setTimerPickerExerciseId(item.id)}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 hover:bg-secondary border border-border/60 hover:border-primary/40 text-[11px] font-medium text-foreground transition-all"
-                        title="Customize rest timer"
-                      >
-                        <Timer className="w-3 h-3 text-primary" />
-                        <span className="font-mono font-semibold">
-                          {formatIntervalLabel(item.restTimerSeconds)}
-                        </span>
-                      </button>
-
-                      {!item.timerActive && (
                         <button
                           type="button"
-                          onClick={() => startRestForExercise(item.id)}
-                          className="px-1.5 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold transition-colors"
-                          title="Start rest timer manually"
+                          onClick={() => setTimerPickerExerciseId(item.id)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary/80 hover:bg-secondary border border-border/60 hover:border-primary/40 text-[11px] font-medium text-foreground transition-all"
+                          title="Customize rest timer"
                         >
-                          Rest
+                          <Timer className="w-3 h-3 text-primary" />
+                          <span className="font-mono font-semibold">
+                            {formatIntervalLabel(item.restTimerSeconds)}
+                          </span>
                         </button>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => removeExerciseFromSession(item.id)}
-                        className="p-1 rounded text-muted-foreground/60 hover:text-destructive transition-colors ml-0.5"
-                        title="Remove exercise"
+                        {!item.timerActive && (
+                          <button
+                            type="button"
+                            onClick={() => startRestForExercise(item.id)}
+                            className="px-1.5 py-1 rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold transition-colors"
+                            title="Start rest timer manually"
+                          >
+                            Rest
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => removeExerciseFromSession(item.id)}
+                          className="p-1 rounded text-muted-foreground/60 hover:text-destructive transition-colors ml-0.5"
+                          title="Remove exercise"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Sets table */}
+                    <div className="p-2.5 sm:p-3 space-y-1.5">
+                      <div className="grid grid-cols-[26px_1fr_1fr_64px] gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-1">
+                        <span>Set</span>
+                        <span className="text-center">{unit}</span>
+                        <span className="text-center">Reps</span>
+                        <span className="text-center">Done</span>
+                      </div>
+
+                      <div
+                        className="space-y-1"
+                        role="table"
+                        aria-label={`Sets for ${item.exercise.name}`}
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                        <AnimatePresence mode="popLayout">
+                          {item.sets.map((set, setIdx) => {
+                            const setId = set.id || `${item.id}-set-${setIdx}-${set.setNumber}`;
+                            return (
+                              <SetRowInput
+                                key={setId}
+                                set={{ ...set, id: setId }}
+                                setIndex={setIdx}
+                                unit={unit}
+                                isOnlySet={item.sets.length <= 1}
+                                onWeightChange={(v) => updateSetValues(item.id, setIdx, "weight", v)}
+                                onRepsChange={(v) => updateSetValues(item.id, setIdx, "reps", v)}
+                                onToggleComplete={() =>
+                                  toggleSetComplete(item.id, setIdx, () =>
+                                    setInvalidSetAlertOpen(true)
+                                  )
+                                }
+                                onRemove={() => removeSetFromExercise(item.id, setIdx)}
+                                onDeleteSet={() => removeSetFromExercise(item.id, setIdx)}
+                              />
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
 
-                  {/* Sets table */}
-                  <div className="p-2.5 sm:p-3 space-y-1.5">
-                    <div className="grid grid-cols-[26px_1fr_1fr_64px] gap-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 px-1">
-                      <span>Set</span>
-                      <span className="text-center">{unit}</span>
-                      <span className="text-center">Reps</span>
-                      <span className="text-center">Done</span>
+                      <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-border/30">
+                        <button
+                          type="button"
+                          onClick={() => addSetToExercise(item.id)}
+                          className="text-primary hover:text-primary/80 font-semibold flex items-center gap-1 py-1"
+                        >
+                          <Plus className="w-3 h-3" /> Add Set
+                        </button>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          Vol:{" "}
+                          {item.sets
+                            .reduce((sum, s) => sum + s.reps * s.weight, 0)
+                            .toLocaleString()}{" "}
+                          {unit}
+                        </span>
+                      </div>
                     </div>
-
-                    <div
-                      className="space-y-1"
-                      role="table"
-                      aria-label={`Sets for ${item.exercise.name}`}
-                    >
-                      <AnimatePresence mode="popLayout">
-                        {item.sets.map((set, setIdx) => {
-                          const setId = set.id || `${item.id}-set-${setIdx}-${set.setNumber}`;
-                          return (
-                            <SetRowInput
-                              key={setId}
-                              set={{ ...set, id: setId }}
-                              setIndex={setIdx}
-                              unit={unit}
-                              isOnlySet={item.sets.length <= 1}
-                              onWeightChange={(v) => updateSetValues(item.id, setIdx, "weight", v)}
-                              onRepsChange={(v) => updateSetValues(item.id, setIdx, "reps", v)}
-                              onToggleComplete={() =>
-                                toggleSetComplete(item.id, setIdx, () =>
-                                  setInvalidSetAlertOpen(true)
-                                )
-                              }
-                              onRemove={() => removeSetFromExercise(item.id, setIdx)}
-                              onDeleteSet={() => removeSetFromExercise(item.id, setIdx)}
-                            />
-                          );
-                        })}
-                      </AnimatePresence>
-                    </div>
-
-                    <div className="pt-1.5 flex items-center justify-between text-[11px] border-t border-border/30">
-                      <button
-                        type="button"
-                        onClick={() => addSetToExercise(item.id)}
-                        className="text-primary hover:text-primary/80 font-semibold flex items-center gap-1 py-1"
-                      >
-                        <Plus className="w-3 h-3" /> Add Set
-                      </button>
-                      <span className="text-[10px] text-muted-foreground font-mono">
-                        Vol:{" "}
-                        {item.sets
-                          .reduce((sum, s) => sum + s.reps * s.weight, 0)
-                          .toLocaleString()}{" "}
-                        {unit}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
 
             {/* Bottom action row */}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
@@ -977,11 +977,10 @@ function WorkoutSessionManager() {
                 <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-none">
                   <Badge
                     variant="secondary"
-                    className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                      !pickerMuscle
-                        ? "bg-primary text-white font-semibold"
-                        : "bg-secondary text-muted-foreground hover:text-foreground"
-                    }`}
+                    className={`cursor-pointer text-[10px] py-0.5 px-2 ${!pickerMuscle
+                      ? "bg-primary text-white font-semibold"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                      }`}
                     onClick={() => setPickerMuscle("")}
                   >
                     All
@@ -993,11 +992,10 @@ function WorkoutSessionManager() {
                       <Badge
                         key={m}
                         variant="secondary"
-                        className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                          isSelected
-                            ? `${colors.bg} ${colors.text}`
-                            : "bg-secondary text-muted-foreground hover:text-foreground"
-                        }`}
+                        className={`cursor-pointer text-[10px] py-0.5 px-2 ${isSelected
+                          ? `${colors.bg} ${colors.text}`
+                          : "bg-secondary text-muted-foreground hover:text-foreground"
+                          }`}
                         onClick={() => setPickerMuscle(isSelected ? "" : m)}
                       >
                         {m}
@@ -1059,7 +1057,7 @@ function WorkoutSessionManager() {
               <Flame className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-primary shrink-0" />
             </div>
             <div className="min-w-0">
-              <h1 className="font-sans font-extrabold tracking-tight text-white text-xl sm:text-2xl leading-tight">
+              <h1 className="font-display font-extrabold tracking-tight text-white text-sm whitespace-nowrap leading-tight">
                 Workout Logger
               </h1>
               <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 hidden sm:block truncate">
@@ -1250,11 +1248,10 @@ function WorkoutSessionManager() {
               <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto scrollbar-none">
                 <Badge
                   variant="secondary"
-                  className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                    !routinePickerMuscle
-                      ? "bg-primary text-white font-semibold"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`cursor-pointer text-[10px] py-0.5 px-2 ${!routinePickerMuscle
+                    ? "bg-primary text-white font-semibold"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    }`}
                   onClick={() => setRoutinePickerMuscle("")}
                 >
                   All
@@ -1266,11 +1263,10 @@ function WorkoutSessionManager() {
                     <Badge
                       key={m}
                       variant="secondary"
-                      className={`cursor-pointer text-[10px] py-0.5 px-2 ${
-                        isSelected
-                          ? `${colors.bg} ${colors.text}`
-                          : "bg-secondary text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`cursor-pointer text-[10px] py-0.5 px-2 ${isSelected
+                        ? `${colors.bg} ${colors.text}`
+                        : "bg-secondary text-muted-foreground hover:text-foreground"
+                        }`}
                       onClick={() => setRoutinePickerMuscle(isSelected ? "" : m)}
                     >
                       {m}
@@ -1294,17 +1290,15 @@ function WorkoutSessionManager() {
                         addExerciseToRoutine(ex);
                       }
                     }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${
-                      isAdded
-                        ? "bg-red-950/40 border border-primary/30"
-                        : "hover:bg-secondary/70 border border-transparent"
-                    }`}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-lg text-left transition-all group ${isAdded
+                      ? "bg-red-950/40 border border-primary/30"
+                      : "hover:bg-secondary/70 border border-transparent"
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <div
-                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                          isAdded ? "bg-primary/20" : "bg-secondary"
-                        }`}
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isAdded ? "bg-primary/20" : "bg-secondary"
+                          }`}
                       >
                         {isAdded ? (
                           <Check className="w-3.5 h-3.5 text-primary" />
@@ -1314,9 +1308,8 @@ function WorkoutSessionManager() {
                       </div>
                       <div>
                         <div
-                          className={`font-semibold text-xs ${
-                            isAdded ? "text-red-200" : "group-hover:text-primary"
-                          } transition-colors`}
+                          className={`font-semibold text-xs ${isAdded ? "text-red-200" : "group-hover:text-primary"
+                            } transition-colors`}
                         >
                           {ex.name}
                         </div>
@@ -1324,11 +1317,10 @@ function WorkoutSessionManager() {
                       </div>
                     </div>
                     <span
-                      className={`text-[10px] font-bold ${
-                        isAdded
-                          ? "text-primary"
-                          : "text-primary opacity-0 group-hover:opacity-100"
-                      } transition-opacity`}
+                      className={`text-[10px] font-bold ${isAdded
+                        ? "text-primary"
+                        : "text-primary opacity-0 group-hover:opacity-100"
+                        } transition-opacity`}
                     >
                       {isAdded ? "✓ Added" : "+ Add"}
                     </span>
