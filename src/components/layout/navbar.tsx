@@ -105,7 +105,7 @@ export function Navbar() {
           </div>
           <div>
             <span className="font-display font-black text-xs tracking-[0.2em] text-white block">
-              HYPERTROPHY LAB
+              MUSCLE LAB
             </span>
             <p className="text-[9px] text-[#888890] tracking-widest uppercase font-medium">
               SCIENCE-BACKED TRACKER
@@ -261,7 +261,7 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2.5">
             <MuscleLabBrandMark className="w-6 h-6 text-[#FF1E27]" />
             <span className="font-display font-black text-xs sm:text-sm tracking-[0.2em] text-white">
-              HYPERTROPHY LAB
+              MUSCLE LAB
             </span>
           </Link>
 

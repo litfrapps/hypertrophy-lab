@@ -139,22 +139,22 @@ export function RoutineSelector({
                   </div>
                 </div>
 
-                {/* Exercise pills */}
-                <div className="flex flex-wrap gap-1" aria-label="Exercises in routine">
-                  {exNames.slice(0, 4).map((name, i) => (
-                    <span
-                      key={i}
-                      className="px-1.5 py-0.5 rounded-md bg-[#16161a] border border-border/50
-                                 text-[10px] text-muted-foreground truncate max-w-[120px]"
-                    >
-                      {name}
-                    </span>
-                  ))}
-                  {exNames.length > 4 && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-[#16161a] border border-border/40 text-[10px] text-muted-foreground">
-                      +{exNames.length - 4} more
-                    </span>
-                  )}
+                {/* Exercise pills — single scrolling row */}
+                <div
+                  className="border-y border-border/20 py-1.5 -mx-0.5"
+                  aria-label="Exercises in routine"
+                >
+                  <div className="flex gap-1 overflow-x-auto scrollbar-none px-0.5">
+                    {exNames.map((name, i) => (
+                      <span
+                        key={i}
+                        className="px-1.5 py-0.5 rounded-md bg-[#16161a] border border-border/50
+                                   text-[10px] text-muted-foreground whitespace-nowrap shrink-0"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Launch trigger button */}
